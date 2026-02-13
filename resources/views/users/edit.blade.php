@@ -33,7 +33,7 @@
                                         @error('nip') <span class="invalid-feedback">{{ $message }}</span> @enderror
                                     </div>
                                     <div class="form-group">
-                                        <label for="email">Email</label>
+                                        <label for="email">Email <small class="text-info font-italic">(Wajib @bpkp.go.id)</small></label>
                                         <input type="email" name="email" id="email" class="form-control rounded-pill @error('email') is-invalid @enderror" value="{{ old('email', $user->email) }}" required>
                                         @error('email') <span class="invalid-feedback">{{ $message }}</span> @enderror
                                     </div>
@@ -88,4 +88,40 @@
             </div>
         </div>
     </div>
+@stop
+
+@section('js')
+<script>
+    $(document).ready(function() {
+        const roleSelect = $('#role_id');
+        const nipInput = $('#nip');
+        const perwakilanSelect = $('#perwakilan_id');
+
+        // NIP Mask: ######## ###### # ###
+        nipInput.inputmask("99999999 999999 9 999", {
+            placeholder: "_",
+            showMaskOnHover: false,
+            showMaskOnFocus: true
+        });
+
+        function toggleNip() {
+            const selectedRole = roleSelect.find('option:selected').text().trim();
+            const exemptRoles = ['Superadmin', 'Admin Perwakilan', 'Rendal'];
+            
+            if (exemptRoles.includes(selectedRole)) {
+                nipInput.prop('disabled', true).val('').attr('placeholder', 'NIP tidak diperlukan untuk role ini');
+            } else {
+                nipInput.prop('disabled', false).attr('placeholder', '######## ###### # ###');
+            }
+        }
+
+        roleSelect.on('change', toggleNip);
+        toggleNip(); // Run on load
+
+        // Admin Perwakilan scope logic
+        if (perwakilanSelect.find('option[value!=""]').length === 1) {
+             perwakilanSelect.find('option[value!=""]').prop('selected', true);
+        }
+    });
+</script>
 @stop

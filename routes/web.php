@@ -27,6 +27,8 @@ Route::group(['middleware' => ['auth']], function () {
     Route::resource('surat-tugas', App\Http\Controllers\SuratTugasController::class);
     
     // Kertas Kerja
+    Route::get('kertas-kerja/generate/{st_id}', [App\Http\Controllers\KertasKerjaController::class, 'generate'])->name('kertas-kerja.generate');
+    Route::get('kertas-kerja/fetch-reference', [App\Http\Controllers\KertasKerjaController::class, 'fetchReference'])->name('kertas-kerja.fetch-reference');
     Route::resource('kertas-kerja', App\Http\Controllers\KertasKerjaController::class);
     
     // Review
@@ -43,6 +45,14 @@ Route::group(['middleware' => ['auth']], function () {
     
     // Master Data
     Route::resource('roles', App\Http\Controllers\RoleController::class);
+    
+    Route::get('templates/{template}/builder', [App\Http\Controllers\TemplateController::class, 'builder'])->name('templates.builder');
+    Route::post('templates/{template}/indicators', [App\Http\Controllers\TemplateController::class, 'storeIndicator'])->name('templates.indicators.store');
+    Route::delete('indicators/{indicator}', [App\Http\Controllers\TemplateController::class, 'destroyIndicator'])->name('templates.indicators.destroy');
+    Route::post('indicators/{indicator}/criteria', [App\Http\Controllers\TemplateController::class, 'storeCriteria'])->name('templates.criteria.store');
+    Route::delete('criteria/{criteria}', [App\Http\Controllers\TemplateController::class, 'destroyCriteria'])->name('templates.criteria.destroy');
+    
+    Route::resource('templates', App\Http\Controllers\TemplateController::class);
 
     // Profile
     Route::get('profile', [App\Http\Controllers\UserController::class, 'profile'])->name('profile');

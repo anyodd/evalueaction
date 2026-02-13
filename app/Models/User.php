@@ -56,7 +56,8 @@ class User extends Authenticatable
 
     public function adminlte_image()
     {
-        return 'https://picsum.photos/300/300';
+        // Using DiceBear Notionists style for a modern and premium look
+        return 'https://api.dicebear.com/9.x/notionists/svg?seed=' . urlencode($this->email) . '&size=128';
     }
 
     public function adminlte_desc()

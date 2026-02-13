@@ -183,6 +183,11 @@ return [
                     'url'  => 'roles',
                     'icon' => 'fas fa-fw fa-user-tag',
                 ],
+                [
+                    'text' => 'Template Kertas Kerja',
+                    'url'  => 'templates',
+                    'icon' => 'fas fa-fw fa-layer-group',
+                ],
             ],
         ],
         ['header' => 'PENGATURAN AKUN'],
@@ -296,6 +301,16 @@ return [
                     'type' => 'css',
                     'asset' => true,
                     'location' => 'css/custom.css',
+                ],
+            ],
+        ],
+        'InputMask' => [
+            'active' => true,
+            'files' => [
+                [
+                    'type' => 'js',
+                    'asset' => false,
+                    'location' => '//cdnjs.cloudflare.com/ajax/libs/jquery.inputmask/5.0.6/jquery.inputmask.min.js',
                 ],
             ],
         ],

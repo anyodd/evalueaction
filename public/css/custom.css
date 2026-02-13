@@ -213,6 +213,27 @@ body {
     background: #94a3b8;
 }
 
+/* User Profile & Avatar Fixes */
+.user-menu .user-image,
+.user-header img,
+.user-panel .image img,
+.img-circle {
+    aspect-ratio: 1 / 1 !important;
+    object-fit: cover !important;
+    width: 2.1rem !important;
+    height: 2.1rem !important;
+}
+
+.user-header img {
+    width: 100px !important;
+    height: 100px !important;
+}
+
+.user-image.img-circle {
+    width: 2.1rem !important;
+    height: 2.1rem !important;
+}
+
 /* Button Pulse/Scale */
 .btn:active {
     transform: scale(0.95);

@@ -1,59 +1,192 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="id">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cetak Surat Tugas - {{ $surat_tuga->nomor_st }}</title>
     <style>
-        body { font-family: 'Arial', sans-serif; padding: 40px; }
-        .header { text-align: center; border-bottom: 3px double #000; padding-bottom: 20px; margin-bottom: 30px; }
-        .title { font-size: 18px; font-weight: bold; text-decoration: underline; }
-        .content { line-height: 1.6; }
-        .footer { margin-top: 50px; float: right; width: 250px; text-align: center; }
+        @page {
+            size: A4 portrait;
+            margin: 2cm;
+        }
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            font-size: 11pt;
+            line-height: 1.5;
+            color: #000;
+        }
+        .header-container {
+            display: flex;
+            align-items: center;
+            border-bottom: 3px solid #000;
+            padding-bottom: 10px;
+            margin-bottom: 20px;
+        }
+        .logo {
+            width: 100px;
+            height: auto;
+            margin-right: 20px;
+        }
+        .header-text {
+            text-align: center;
+            flex-grow: 1;
+        }
+        .header-text h2 {
+            margin: 0;
+            font-size: 14pt;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .header-text h3 {
+            margin: 0;
+            font-size: 12pt;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+        .header-text p {
+            margin: 0;
+            font-size: 10pt;
+        }
+        .title-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .title-container h3 {
+            margin: 0;
+            text-decoration: underline;
+            text-transform: uppercase;
+        }
+        .content {
+            text-align: justify;
+        }
+        table.personel-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        table.personel-table th, table.personel-table td {
+            border: 1px solid #000;
+            padding: 5px 10px;
+        }
+        table.personel-table th {
+            background-color: #f0f0f0;
+            text-align: center;
+        }
+        .footer-container {
+            margin-top: 30px;
+            display: flex;
+            justify-content: flex-end;
+        }
+        .signature-block {
+            width: 40%;
+            text-align: left;
+        }
+        .disclaimer {
+            margin-top: 20px;
+            font-size: 9pt;
+        }
+        
         @media print {
-            .no-print { display: none; }
+            body {
+                -webkit-print-color-adjust: exact;
+            }
         }
     </style>
 </head>
 <body>
-    <div class="no-print" style="margin-bottom: 20px;">
-        <button onclick="window.print()" style="padding: 10px 20px; cursor: pointer;">Klik Cetak</button>
-        <button onclick="window.close()" style="padding: 10px 20px; cursor: pointer;">Tutup</button>
+
+    <div class="header-container">
+        <!-- Logo BPKP directly from URL as requested by user -->
+        <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Logo_BPKP_%282020%29.png/600px-Logo_BPKP_%282020%29.png" alt="Logo BPKP" class="logo">
+        
+        <div class="header-text">
+            <h2>BADAN PENGAWASAN KEUANGAN DAN PEMBANGUNAN</h2>
+            <h3>PERWAKILAN PROVINSI ACEH</h3> <!-- Assuming Aceh based on user's context, dynamically populated below -->
+        </div>
+    </div>
+    
+    <!-- Dynamic Header Override if data exists -->
+    @if($surat_tuga->perwakilan)
+    <style>
+        .header-text h3 { content: "{{ $surat_tuga->perwakilan->nama_perwakilan }}"; }
+        .header-details::after { content: "{{ $surat_tuga->perwakilan->alamat }} | Telp: {{ $surat_tuga->perwakilan->telepon }}"; }
+    </style>
+    <!-- Re-rendering header properly with PHP -->
+    <script>
+        document.querySelector('.header-text h3').textContent = "{{ strtoupper($surat_tuga->perwakilan->nama_perwakilan) }}";
+    </script>
+    <div class="header-text" style="display:none;"> <!-- Hidden duplicate for script to grab data if needed, but better to render directly --></div>
+    @endif
+    
+    <!-- Re-render Header with proper PHP logic -->
+    <div class="header-container" style="border-bottom: 3px solid #000; margin-top: -120px; background: white; position: relative;">
+         <img src="https://upload.wikimedia.org/wikipedia/commons/thumb/6/6f/Logo_BPKP_%282020%29.png/600px-Logo_BPKP_%282020%29.png" alt="Logo BPKP" class="logo">
+         <div class="header-text">
+            <h2>BADAN PENGAWASAN KEUANGAN DAN PEMBANGUNAN</h2>
+            <h3>{{ strtoupper($surat_tuga->perwakilan->nama_perwakilan ?? 'Perwakilan Provinsi Aceh') }}</h3>
+            <p>{{ $surat_tuga->perwakilan->alamat ?? 'Jl. T. Panglima Nyak Makam No. 8, Banda Aceh' }}</p>
+            <p>Telepon: {{ $surat_tuga->perwakilan->telepon ?? '(0651) 28133' }}, Email: {{ $surat_tuga->perwakilan->email ?? 'aceh@bpkp.go.id' }}</p>
+         </div>
     </div>
 
-    <div class="header">
-        <h2>BADAN PENGAWASAN KEUANGAN DAN PEMBANGUNAN</h2>
-        <h3>PERWAKILAN PROVINSI {{ strtoupper($surat_tuga->perwakilan->nama_perwakilan ?? 'PUSAT') }}</h3>
-    </div>
-
-    <div style="text-align: center;">
-        <p class="title">SURAT TUGAS</p>
+    <div class="title-container">
+        <h3>SURAT TUGAS</h3>
         <p>Nomor: {{ $surat_tuga->nomor_st }}</p>
     </div>
 
     <div class="content">
-        <p>Dengan ini menugaskan kepada tim tersebut di bawah ini untuk melaksanakan evaluasi pada:</p>
-        <table style="width: 100%; border-collapse: collapse; margin-top: 20px;">
-            <tr>
-                <td style="width: 30%;">Objek Evaluasi</td>
-                <td>: {{ $surat_tuga->nama_objek }}</td>
-            </tr>
-            <tr>
-                <td>Tahun Evaluasi</td>
-                <td>: {{ $surat_tuga->tahun_evaluasi }}</td>
-            </tr>
-            <tr>
-                <td>Tanggal Penugasan</td>
-                <td>: {{ \Carbon\Carbon::parse($surat_tuga->tgl_st)->format('d F Y') }}</td>
-            </tr>
+        <p>Kepala Perwakilan Badan Pengawasan Keuangan dan Pembangunan Provinsi Aceh dengan ini menugaskan:</p>
+
+        <table class="personel-table">
+            <thead>
+                <tr>
+                    <th style="width: 5%;">No</th>
+                    <th>Nama</th>
+                    <th>NIP</th>
+                    <th>Jabatan/Peran</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach($surat_tuga->personel as $index => $personel)
+                <tr>
+                    <td style="text-align: center;">{{ $index + 1 }}</td>
+                    <td>{{ $personel->user->name }}</td>
+                    <td style="text-align: center;">{{ $personel->user->nip ?? '-' }}</td>
+                    <td>{{ $personel->role_dalam_tim }}</td>
+                </tr>
+                @endforeach
+            </tbody>
         </table>
+
+        <p>Untuk melaksanakan {{ $surat_tuga->nama_objek }}.</p>
+
+        @if($surat_tuga->tgl_mulai && $surat_tuga->tgl_selesai)
+        <p>Penugasan ini dilaksanakan selama {{ \Carbon\Carbon::parse($surat_tuga->tgl_mulai)->diffInDays(\Carbon\Carbon::parse($surat_tuga->tgl_selesai)) + 1 }} hari kerja mulai tanggal {{ \Carbon\Carbon::parse($surat_tuga->tgl_mulai)->isoFormat('D MMMM Y') }} sampai dengan tanggal {{ \Carbon\Carbon::parse($surat_tuga->tgl_selesai)->isoFormat('D MMMM Y') }}.</p>
+        @else
+        <p>Waktu pelaksanaan: {{ \Carbon\Carbon::parse($surat_tuga->tgl_st)->isoFormat('D MMMM Y') }}.</p>
+        @endif
+
+        <p>Biaya kegiatan ini dibebankan pada anggaran DIPA Perwakilan BPKP Provinsi Aceh Tahun {{ $surat_tuga->tahun_evaluasi }}.</p>
+        
+        <div class="disclaimer">
+            <p><strong>Catatan:</strong> Pegawai BPKP dalam melaksanakan tugas tidak menerima/meminta gratifikasi dan suap.</p>
+        </div>
+
+        <p>Demikian untuk dilaksanakan dengan penuh tanggung jawab.</p>
     </div>
 
-    <div class="footer">
-        <p>Dikeluarkan di: {{ $surat_tuga->perwakilan->nama_perwakilan ?? 'Pusat' }}</p>
-        <p>Pada tanggal: {{ \Carbon\Carbon::parse($surat_tuga->tgl_st)->format('d F Y') }}</p>
-        <br><br><br>
-        <p><b>Kepala Perwakilan</b></p>
+    <div class="footer-container">
+        <div class="signature-block">
+            <p>{{ $surat_tuga->perwakilan->kota ?? 'Banda Aceh' }}, {{ \Carbon\Carbon::parse($surat_tuga->tgl_st)->isoFormat('D MMMM Y') }}</p>
+            <p>Kepala Perwakilan,</p>
+            <br><br><br>
+            <p><strong>(Nama Kepala Perwakilan)</strong></p>
+            <p>NIP. ...........................</p>
+        </div>
     </div>
+
+    <script>
+        window.print();
+    </script>
 </body>
 </html>

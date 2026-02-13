@@ -13,12 +13,24 @@ class KertasKerja extends Model
 
     protected $fillable = [
         'st_id',
+        'template_id',
         'user_id',
         'judul_kk',
         'isi_kk',
         'status_approval',
+        'nilai_akhir',
         'file_pendukung',
     ];
+
+    public function template()
+    {
+        return $this->belongsTo(KkTemplate::class, 'template_id');
+    }
+
+    public function answers()
+    {
+        return $this->hasMany(KkAnswer::class, 'kertas_kerja_id');
+    }
 
     public function suratTugas()
     {

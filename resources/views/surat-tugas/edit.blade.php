@@ -3,43 +3,177 @@
 @section('title', 'Edit Surat Tugas')
 
 @section('content_header')
-    <h1>Edit Surat Tugas</h1>
+    <div class="container-fluid animate__animated animate__fadeIn">
+        <h1 class="m-0 text-dark font-weight-bold">Update Surat Tugas</h1>
+    </div>
 @stop
 
 @section('content')
-    <div class="card card-warning">
-        <div class="card-header">
-            <h3 class="card-title">Form Update Surat Tugas</h3>
-        </div>
-        <!-- /.card-header -->
-        <!-- form start -->
+    <div class="container-fluid animate__animated animate__fadeInUp">
         <form action="{{ route('surat-tugas.update', $surat_tuga->id) }}" method="POST">
             @csrf
             @method('PUT')
-            <div class="card-body">
-                <div class="form-group">
-                    <label for="nomor_st">Nomor ST</label>
-                    <input type="text" class="form-control" id="nomor_st" name="nomor_st" value="{{ $surat_tuga->nomor_st }}" required>
+            <div class="row">
+                {{-- Data Utama ST --}}
+                <div class="col-md-5">
+                    <div class="card shadow-sm border-0" style="border-radius: 15px;">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h3 class="card-title font-weight-bold text-navy"><i class="fas fa-edit mr-2"></i> Detail Penugasan</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="nomor_st">Nomor Surat Tugas</label>
+                                <input type="text" name="nomor_st" id="nomor_st" class="form-control rounded-pill @error('nomor_st') is-invalid @enderror" value="{{ old('nomor_st', $surat_tuga->nomor_st) }}" required>
+                                @error('nomor_st') <span class="invalid-feedback">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="form-group">
+                                <label for="tgl_st">Tanggal ST</label>
+                                <input type="date" name="tgl_st" id="tgl_st" class="form-control rounded-pill @error('tgl_st') is-invalid @enderror" value="{{ old('tgl_st', $surat_tuga->tgl_st) }}" required>
+                                @error('tgl_st') <span class="invalid-feedback">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="form-row">
+                                <div class="form-group col-md-6">
+                                    <label for="tgl_mulai">Tanggal Mulai</label>
+                                    <input type="date" name="tgl_mulai" id="tgl_mulai" class="form-control rounded-pill @error('tgl_mulai') is-invalid @enderror" value="{{ old('tgl_mulai', $surat_tuga->tgl_mulai) }}">
+                                    @error('tgl_mulai') <span class="invalid-feedback">{{ $message }}</span> @enderror
+                                </div>
+                                <div class="form-group col-md-6">
+                                    <label for="tgl_selesai">Tanggal Selesai</label>
+                                    <input type="date" name="tgl_selesai" id="tgl_selesai" class="form-control rounded-pill @error('tgl_selesai') is-invalid @enderror" value="{{ old('tgl_selesai', $surat_tuga->tgl_selesai) }}">
+                                    @error('tgl_selesai') <span class="invalid-feedback">{{ $message }}</span> @enderror
+                                </div>
+                            </div>
+                            <div class="form-group">
+                                <label for="nama_objek">Nama Objek Evaluasi</label>
+                                <textarea name="nama_objek" id="nama_objek" class="form-control @error('nama_objek') is-invalid @enderror" rows="3" style="border-radius: 15px;" required>{{ old('nama_objek', $surat_tuga->nama_objek) }}</textarea>
+                                @error('nama_objek') <span class="invalid-feedback">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="form-group">
+                                <label for="jenis_penugasan_id">Jenis Penugasan</label>
+                                <select name="jenis_penugasan_id" id="jenis_penugasan_id" class="form-control rounded-pill @error('jenis_penugasan_id') is-invalid @enderror" required>
+                                    <option value="">-- Pilih Jenis Penugasan --</option>
+                                    @foreach($jenisPenugasan as $jp)
+                                        <option value="{{ $jp->id }}" {{ old('jenis_penugasan_id', $surat_tuga->jenis_penugasan_id) == $jp->id ? 'selected' : '' }}>{{ $jp->nama }}</option>
+                                    @endforeach
+                                </select>
+                                @error('jenis_penugasan_id') <span class="invalid-feedback">{{ $message }}</span> @enderror
+                            </div>
+                            <div class="form-group">
+                                <label for="tahun_evaluasi">Tahun Evaluasi</label>
+                                <select name="tahun_evaluasi" id="tahun_evaluasi" class="form-control rounded-pill @error('tahun_evaluasi') is-invalid @enderror">
+                                    @for($i = date('Y'); $i >= date('Y')-5; $i--)
+                                        <option value="{{ $i }}" {{ old('tahun_evaluasi', $surat_tuga->tahun_evaluasi) == $i ? 'selected' : '' }}>{{ $i }}</option>
+                                    @endfor
+                                </select>
+                            </div>
+                        </div>
+                    </div>
                 </div>
-                <div class="form-group">
-                    <label for="tgl_st">Tanggal ST</label>
-                    <input type="date" class="form-control" id="tgl_st" name="tgl_st" value="{{ $surat_tuga->tgl_st }}" required>
-                </div>
-                <div class="form-group">
-                    <label for="nama_objek">Nama Objek Evaluasi</label>
-                    <input type="text" class="form-control" id="nama_objek" name="nama_objek" value="{{ $surat_tuga->nama_objek }}" required>
-                </div>
-                <div class="form-group">
-                    <label for="tahun_evaluasi">Tahun Evaluasi</label>
-                    <input type="number" class="form-control" id="tahun_evaluasi" name="tahun_evaluasi" value="{{ $surat_tuga->tahun_evaluasi }}" required>
-                </div>
-            </div>
-            <!-- /.card-body -->
 
-            <div class="card-footer">
-                <button type="submit" class="btn btn-warning">Update Data</button>
-                <a href="{{ route('surat-tugas.index') }}" class="btn btn-default float-right">Batal</a>
+                {{-- Personel Terlibat --}}
+                <div class="col-md-7">
+                    <div class="card shadow-sm border-0" style="border-radius: 15px;">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h3 class="card-title font-weight-bold text-navy"><i class="fas fa-users mr-2"></i> Update Susunan Tim</h3>
+                        </div>
+                        <div class="card-body">
+                            <div class="table-responsive">
+                                <table class="table table-borderless" id="personel-table">
+                                    <thead>
+                                        <tr class="text-muted small text-uppercase">
+                                            <th>Personel</th>
+                                            <th>Peran Dalam Tim</th>
+                                            <th style="width: 50px"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="personel-container">
+                                        @forelse($surat_tuga->personel as $p)
+                                            <tr class="personel-row">
+                                                <td>
+                                                    <select name="personel[]" class="form-control select2 rounded-pill personel-select" required>
+                                                        @foreach($users as $user)
+                                                            <option value="{{ $user->id }}" {{ $p->user_id == $user->id ? 'selected' : '' }}>{{ $user->name }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <select name="peran[]" class="form-control rounded-pill" required>
+                                                        <option value="Korwas" {{ $p->role_dalam_tim == 'Korwas' ? 'selected' : '' }}>Korwas</option>
+                                                        <option value="Dalnis" {{ $p->role_dalam_tim == 'Dalnis' ? 'selected' : '' }}>Dalnis</option>
+                                                        <option value="Ketua Tim" {{ $p->role_dalam_tim == 'Ketua Tim' ? 'selected' : '' }}>Ketua Tim</option>
+                                                        <option value="Anggota" {{ $p->role_dalam_tim == 'Anggota' ? 'selected' : '' }}>Anggota</option>
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <button type="button" class="btn btn-outline-danger btn-sm border-0 remove-row"><i class="fas fa-times"></i></button>
+                                                </td>
+                                            </tr>
+                                        @empty
+                                            <tr class="personel-row">
+                                                <td>
+                                                    <select name="personel[]" class="form-control select2 rounded-pill personel-select" required>
+                                                        <option value="">-- Pilih Pegawai --</option>
+                                                        @foreach($users as $user)
+                                                            <option value="{{ $user->id }}">{{ $user->name }}</option>
+                                                        @endforeach
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <select name="peran[]" class="form-control rounded-pill" required>
+                                                        <option value="Korwas">Korwas</option>
+                                                        <option value="Dalnis">Dalnis</option>
+                                                        <option value="Ketua Tim">Ketua Tim</option>
+                                                        <option value="Anggota">Anggota</option>
+                                                    </select>
+                                                </td>
+                                                <td>
+                                                    <button type="button" class="btn btn-outline-danger btn-sm border-0 remove-row"><i class="fas fa-times"></i></button>
+                                                </td>
+                                            </tr>
+                                        @endforelse
+                                    </tbody>
+                                </table>
+                            </div>
+                            <button type="button" id="add-personel" class="btn btn-outline-primary btn-sm rounded-pill mt-2">
+                                <i class="fas fa-plus mr-1"></i> Tambah Personel
+                            </button>
+                        </div>
+                        <div class="card-footer bg-white border-0 pb-4 text-center">
+                            <hr>
+                            <button type="submit" class="btn btn-warning text-white rounded-pill px-5 shadow-sm">Simpan Perubahan</button>
+                            <a href="{{ route('surat-tugas.index') }}" class="btn btn-link text-muted">Batal</a>
+                        </div>
+                    </div>
+                </div>
             </div>
         </form>
     </div>
+@stop
+
+@section('js')
+<script>
+    $(document).ready(function() {
+        // Initialize Select2 for existing rows
+        $('.personel-select').select2({ theme: 'bootstrap4' });
+
+        $('#add-personel').click(function() {
+            let row = $('.personel-row').first().clone();
+            row.find('select').val('');
+            row.find('.select2-container').remove(); 
+            row.find('select').removeClass('select2-hidden-accessible');
+            row.find('select').removeAttr('data-select2-id');
+            row.find('option').removeAttr('data-select2-id');
+            
+            $('#personel-container').append(row);
+             // Init select2 for new row
+            row.find('.personel-select').select2({ theme: 'bootstrap4' });
+        });
+
+        $(document).on('click', '.remove-row', function() {
+            if ($('.personel-row').length > 1) {
+                $(this).closest('tr').remove();
+            }
+        });
+    });
+</script>
 @stop

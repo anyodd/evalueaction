@@ -8,30 +8,52 @@ class UserController extends Controller
 {
     public function index()
     {
-        $users = \App\Models\User::with(['role', 'perwakilan'])->latest()->get();
+        $query = \App\Models\User::with(['role', 'perwakilan'])->latest();
+
+        // Scoping per Perwakilan (kecuali Superadmin / Rendal)
+        if (!auth()->user()->role || (!in_array(auth()->user()->role->name, ['Superadmin', 'Rendal']))) {
+            $query->where('perwakilan_id', auth()->user()->perwakilan_id);
+        }
+
+        $users = $query->get();
         return view('users.index', compact('users'));
     }
 
     public function create()
     {
         $roles = \App\Models\Role::all();
-        $perwakilan = \App\Models\Perwakilan::all();
+        $perwakilan_query = \App\Models\Perwakilan::query();
+        
+        // Scope for Admin Perwakilan
+        if (auth()->user()->role && auth()->user()->role->name === 'Admin Perwakilan') {
+            $perwakilan_query->where('id', auth()->user()->perwakilan_id);
+        }
+        
+        $perwakilan = $perwakilan_query->get();
         return view('users.create', compact('roles', 'perwakilan'));
     }
 
     public function store(Request $request)
     {
         $request->validate([
-            'nip' => 'nullable|string|max:20|unique:users',
+            'nip' => 'nullable|string|max:25|unique:users',
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users',
+            'email' => 'required|email|unique:users|regex:/^[a-zA-Z0-9._%+-]+@bpkp\.go\.id$/i',
             'password' => 'required|min:6|confirmed',
             'role_id' => 'required|exists:roles,id',
             'perwakilan_id' => 'nullable|exists:perwakilan,id',
+        ], [
+            'email.regex' => 'Wajib menggunakan email dengan domain @bpkp.go.id (Email GWS).',
         ]);
 
+        $role = \App\Models\Role::find($request->role_id);
+        $nip = $request->nip;
+        if ($role && in_array($role->name, ['Superadmin', 'Admin Perwakilan', 'Rendal'])) {
+            $nip = null;
+        }
+
         \App\Models\User::create([
-            'nip' => $request->nip,
+            'nip' => $nip,
             'name' => $request->name,
             'email' => $request->email,
             'password' => bcrypt($request->password),
@@ -46,23 +68,38 @@ class UserController extends Controller
     public function edit(\App\Models\User $user)
     {
         $roles = \App\Models\Role::all();
-        $perwakilan = \App\Models\Perwakilan::all();
+        $perwakilan_query = \App\Models\Perwakilan::query();
+        
+        // Scope for Admin Perwakilan
+        if (auth()->user()->role && auth()->user()->role->name === 'Admin Perwakilan') {
+            $perwakilan_query->where('id', auth()->user()->perwakilan_id);
+        }
+        
+        $perwakilan = $perwakilan_query->get();
         return view('users.edit', compact('user', 'roles', 'perwakilan'));
     }
 
     public function update(Request $request, \App\Models\User $user)
     {
         $request->validate([
-            'nip' => 'nullable|string|max:20|unique:users,nip,'.$user->id,
+            'nip' => 'nullable|string|max:25|unique:users,nip,'.$user->id,
             'name' => 'required|string|max:255',
-            'email' => 'required|email|unique:users,email,'.$user->id,
+            'email' => 'required|email|unique:users,email,'.$user->id.'|regex:/^[a-zA-Z0-9._%+-]+@bpkp\.go\.id$/i',
             'password' => 'nullable|min:6|confirmed',
             'role_id' => 'required|exists:roles,id',
             'perwakilan_id' => 'nullable|exists:perwakilan,id',
+        ], [
+            'email.regex' => 'Wajib menggunakan email dengan domain @bpkp.go.id (Email GWS).',
         ]);
 
+        $role = \App\Models\Role::find($request->role_id);
+        $nip = $request->nip;
+        if ($role && in_array($role->name, ['Superadmin', 'Admin Perwakilan', 'Rendal'])) {
+            $nip = null;
+        }
+
         $data = [
-            'nip' => $request->nip,
+            'nip' => $nip,
             'name' => $request->name,
             'email' => $request->email,
             'role_id' => $request->role_id,

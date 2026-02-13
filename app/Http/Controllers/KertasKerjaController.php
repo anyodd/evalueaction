@@ -8,49 +8,187 @@ class KertasKerjaController extends Controller
 {
     public function index()
     {
-        $query = \App\Models\KertasKerja::with(['suratTugas', 'user'])->latest();
-        
-        if (!auth()->user()->role || (!in_array(auth()->user()->role->name, ['Superadmin', 'Rendal']))) {
-            $user_perwakilan = auth()->user()->perwakilan_id;
-            $query->whereHas('suratTugas', function($q) use ($user_perwakilan) {
-                $q->where('perwakilan_id', $user_perwakilan);
-            });
+        if (auth()->user()->role && auth()->user()->role->name === 'Superadmin') {
+            $assignments = \App\Models\SuratTugas::with(['jenisPenugasan', 'template', 'kertasKerja' => function($q) {
+                $q->where('user_id', auth()->id());
+            }])->latest()->get();
+        } else {
+            // 1. Get STs where user is assigned
+            $assignments = \App\Models\SuratTugas::whereHas('personel', function($q) {
+                $q->where('user_id', auth()->id());
+            })->with(['jenisPenugasan', 'template', 'kertasKerja' => function($q) {
+                $q->where('user_id', auth()->id());
+            }])->latest()->get();
         }
 
-        $kertasKerja = $query->get();
-        return view('kertas-kerja.index', compact('kertasKerja'));
+        return view('kertas-kerja.index', compact('assignments'));
     }
 
-    public function create()
+    public function generate($st_id)
     {
-        $st_query = \App\Models\SuratTugas::query();
+        $st = \App\Models\SuratTugas::findOrFail($st_id);
         
-        if (!auth()->user()->role || (!in_array(auth()->user()->role->name, ['Superadmin', 'Rendal']))) {
-            $st_query->where('perwakilan_id', auth()->user()->perwakilan_id);
+        // Validation: Check if user is in team (Bypass for Superadmin)
+        $isTim = \App\Models\StPersonel::where('st_id', $st->id)
+            ->where('user_id', auth()->id())
+            ->exists();
+
+        $isSuperadmin = auth()->user()->role && auth()->user()->role->name === 'Superadmin';
+
+        if (!$isTim && !$isSuperadmin) {
+            abort(403, 'Anda tidak terdaftar dalam tim penugasan ini.');
         }
 
-        $suratTugas = $st_query->get();
-        return view('kertas-kerja.create', compact('suratTugas'));
+        // Check if KK already exists
+        $kk = \App\Models\KertasKerja::where('st_id', $st->id)
+            ->where('user_id', auth()->id())
+            ->first();
+
+        if (!$kk) {
+            $kk = \App\Models\KertasKerja::create([
+                'st_id' => $st->id,
+                'user_id' => auth()->id(),
+                'template_id' => $st->template_id,
+                'judul_kk' => 'Kertas Kerja - ' . $st->jenisPenugasan->nama,
+                'status_approval' => 'Draft',
+            ]);
+        }
+
+        return redirect()->route('kertas-kerja.edit', $kk->id);
     }
 
-    public function store(Request $request)
+    public function edit(\App\Models\KertasKerja $kertasKerja)
     {
-        $request->validate([
-            'st_id' => 'required|exists:surat_tugas,id',
-            'judul_kk' => 'required|string|max:255',
-            'isi_kk' => 'nullable|string',
-        ]);
+        // Authorization
+        if ($kertasKerja->user_id !== auth()->id() && auth()->user()->role->name !== 'Superadmin') {
+            abort(403);
+        }
 
-        \App\Models\KertasKerja::create([
-            'st_id' => $request->st_id,
-            'user_id' => auth()->id(),
-            'judul_kk' => $request->judul_kk,
-            'isi_kk' => $request->isi_kk,
-            'status_approval' => 'Draft',
-        ]);
+        $kertasKerja->load('template.indicators', 'answers.details');
+        
+        // Organize indicators hierarchy
+        $indicators = \App\Models\TemplateIndicator::where('template_id', $kertasKerja->template_id)
+            ->whereNull('parent_id')
+            ->with(['children' => function($q) {
+                $q->orderBy('id')->with(['criteria', 'children' => function($q2) {
+                    $q2->orderBy('id')->with('criteria');
+                }]);
+            }])
+            ->orderBy('id')
+            ->get();
+
+        return view('kertas-kerja.form', compact('kertasKerja', 'indicators'));
+    }
+
+    public function update(Request $request, \App\Models\KertasKerja $kertasKerja)
+    {
+        if ($kertasKerja->user_id !== auth()->id() && auth()->user()->role->name !== 'Superadmin') {
+            abort(403);
+        }
+
+        $data = $request->input('answers', []);
+        
+        foreach ($data as $indikatorId => $val) {
+            $nilai = $val['nilai'] ?? null;
+            $catatan = $val['catatan'] ?? null;
+
+            // Handle Criteria Tally Logic
+            if (isset($val['criteria']) && is_array($val['criteria'])) {
+                // Save Answer first (or find existing)
+                $answer = \App\Models\KkAnswer::firstOrCreate(
+                    ['kertas_kerja_id' => $kertasKerja->id, 'indikator_id' => $indikatorId],
+                    ['nilai' => 0]
+                );
+
+                // Sync Checklist details
+                // First, delete old details for this answer
+                \App\Models\KkAnswerDetail::where('kk_answer_id', $answer->id)->delete();
+
+                $checkedCount = 0;
+                foreach ($val['criteria'] as $criteriaId => $isChecked) {
+                    if ($isChecked == 'on') {
+                        \App\Models\KkAnswerDetail::create([
+                            'kk_answer_id' => $answer->id,
+                            'criteria_id' => $criteriaId,
+                            'is_checked' => true
+                        ]);
+                        $checkedCount++;
+                    }
+                }
+                
+                // Calculate Score (0-100 based on percentage of criteria met)
+                // Assuming all criteria are equal for now
+                $totalCriteria = \App\Models\TemplateCriteria::where('indicator_id', $indikatorId)->count();
+                if ($totalCriteria > 0) {
+                    $nilai = ($checkedCount / $totalCriteria) * 100;
+                } else {
+                    $nilai = 0;
+                }
+                
+                // Update the main answer value
+                $answer->update(['nilai' => $nilai, 'catatan' => $catatan]);
+                
+            } else {
+                // Standard Input (Manual / Text)
+                \App\Models\KkAnswer::updateOrCreate(
+                    [
+                        'kertas_kerja_id' => $kertasKerja->id,
+                        'indikator_id' => $indikatorId
+                    ],
+                    [
+                        'nilai' => $nilai,
+                        'catatan' => $catatan
+                    ]
+                );
+            }
+        }
+        
+        // Calculate Final Score (Simple Average of 0-100 scores)
+        // Works for both Manual and Criteria based scores if normalized to 0-100
+        $allAnswers = \App\Models\KkAnswer::where('kertas_kerja_id', $kertasKerja->id)
+            ->whereHas('indicator', function($q) {
+                $q->whereIn('tipe', ['score_manual', 'criteria_tally']);
+            })
+            ->get();
+            
+        if ($allAnswers->count() > 0) {
+            $totalScore = $allAnswers->avg('nilai');
+            $kertasKerja->update(['nilai_akhir' => $totalScore]);
+        }
 
         return redirect()->route('kertas-kerja.index')
             ->with('success', 'Kertas Kerja berhasil disimpan!');
     }
 
+    public function fetchReference(Request $request)
+    {
+        $request->validate([
+            'ref_jenis_id' => 'required',
+            'tahun' => 'required'
+        ]);
+
+        $st = \App\Models\SuratTugas::where('jenis_penugasan_id', $request->ref_jenis_id)
+            ->where('tahun_evaluasi', $request->tahun)
+            ->where('perwakilan_id', auth()->user()->perwakilan_id)
+            ->whereHas('kertasKerja', function($q) {
+                $q->whereNotNull('nilai_akhir');
+            })
+            ->latest()
+            ->first();
+
+        if (!$st) {
+            return response()->json([
+                'success' => false, 
+                'message' => 'Tidak ditemukan Kertas Kerja dengan nilai akhir untuk jenis penugasan ini pada tahun ' . $request->tahun
+            ]);
+        }
+
+        $kk = $st->kertasKerja()->whereNotNull('nilai_akhir')->latest()->first();
+
+        return response()->json([
+            'success' => true, 
+            'nilai' => $kk->nilai_akhir,
+            'source' => $st->nomor_st
+        ]);
+    }
 }

@@ -10,7 +10,14 @@ class Perwakilan extends Model
     use HasFactory;
     
     protected $table = 'perwakilan';
-    protected $fillable = ['nama_perwakilan', 'kode_wilayah'];
+    protected $fillable = [
+        'nama_perwakilan', 
+        'kode_wilayah',
+        'alamat',
+        'telepon',
+        'email',
+        'website'
+    ];
 
     public function users()
     {
