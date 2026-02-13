@@ -13,9 +13,14 @@
         </h1>
         <div class="d-flex justify-content-between align-items-center">
             <small class="text-muted">{{ $kertasKerja->judul_kk }}</small>
-            <a href="{{ route('kertas-kerja.index') }}" class="btn btn-default btn-sm shadow-sm">
-                <i class="fas fa-arrow-left mr-1"></i> Kembali ke Daftar
-            </a>
+            <div class="d-flex align-items-center">
+                <a href="{{ route('kertas-kerja.review-sheet', $kertasKerja->id) }}" class="btn btn-outline-navy btn-sm shadow-sm mr-2" target="_blank">
+                    <i class="fas fa-print mr-1"></i> Lembar Review
+                </a>
+                <a href="{{ route('kertas-kerja.index') }}" class="btn btn-default btn-sm shadow-sm">
+                    <i class="fas fa-arrow-left mr-1"></i> Kembali ke Daftar
+                </a>
+            </div>
         </div>
     </div>
 @stop
@@ -146,6 +151,67 @@
                     }
                 });
             });
+            // AJAX Save QA
+            $(document).on('click', '.btn-save-qa', function() {
+                let btn = $(this);
+                let indicatorId = btn.data('indicator');
+                let criteriaId = btn.data('criteria');
+                let kkId = btn.data('kk');
+                
+                // Collect Data
+                let radioName = `qa[${criteriaId}][qa_value]`;
+                let qaValue = $(`input[name="${radioName}"]:checked`).val();
+                
+                let noteQaName = `qa[${criteriaId}][catatan_qa]`;
+                let noteQa = $(`textarea[name="${noteQaName}"]`).val();
+
+                if (!qaValue && !noteQa) {
+                    toastr.warning('Pilih nilai QA atau isi catatan.');
+                    return;
+                }
+
+                // Prepare FormData
+                let formData = new FormData();
+                let csrfToken = $('meta[name="csrf-token"]').attr('content');
+                
+                if (!csrfToken) {
+                    toastr.error('CSRF Token missing. Silakan refresh halaman.');
+                    return;
+                }
+
+                formData.append('_token', csrfToken);
+                formData.append('kk_id', kkId);
+                formData.append('criteria_id', criteriaId);
+                if (qaValue) formData.append('qa_value', qaValue);
+                formData.append('catatan_qa', noteQa);
+
+                // UI Loading
+                let originalIcon = btn.html();
+                btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+
+                // AJAX
+                $.ajax({
+                    url: '/kertas-kerja/update-qa-single', 
+                    type: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(response) {
+                        if(response.success) {
+                            toastr.success(response.message);
+                        } else {
+                            toastr.error(response.message || 'Gagal menyimpan QA.');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        toastr.error('Gagal menyimpan QA. ' + error);
+                    },
+                    complete: function() {
+                        btn.prop('disabled', false).html(originalIcon);
+                    }
+                });
+            });
+
             // AJAX Save Criteria
             $(document).on('click', '.btn-save-criteria', function() {
                 let btn = $(this);

@@ -32,11 +32,14 @@
                                 @php
                                     $detail = $answer ? $answer->details->where('criteria_id', $criteria->id)->first() : null;
                                     $val = $detail ? $detail->answer_value : 'none'; 
+                                    $scoreQa = $detail ? $detail->score_qa : '';
+                                    $catatanQa = $detail ? $detail->catatan_qa : '';
                                 @endphp
                                 <tr>
                                     <td class="text-sm align-middle">{{ $criteria->uraian }}</td>
                                     <td class="align-middle">
-                                        <div class="d-flex flex-column flex-xl-row justify-content-center align-items-start align-items-xl-center">
+                                        {{-- Original Score Display --}}
+                                        <div class="d-flex flex-column flex-xl-row justify-content-center align-items-start align-items-xl-center {{ isset($isQaMode) && $isQaMode ? 'opacity-50' : '' }}">
                                             <div class="icheck-success d-inline mr-xl-2 mb-1 mb-xl-0">
                                                 <input type="radio" class="criteria-radio" 
                                                     name="answers[{{ $question->id }}][criteria][{{ $criteria->id }}][value]" 
@@ -65,6 +68,39 @@
                                                 <label for="c-{{ $criteria->id }}-none">Tidak</label>
                                             </div>
                                         </div>
+
+                                        {{-- QA Score Input (Radio) --}}
+                                        @if(isset($isQaMode) && $isQaMode)
+                                            <div class="mt-2 border-top pt-2 bg-light p-2 rounded">
+                                                <label class="text-xs font-weight-bold text-navy mb-1">Koreksi QA:</label>
+                                                <div class="d-flex flex-column flex-xl-row justify-content-start align-items-start align-items-xl-center">
+                                                    <div class="icheck-navy d-inline mr-xl-2 mb-1 mb-xl-0">
+                                                        <input type="radio" class="qa-radio" 
+                                                            name="qa[{{ $criteria->id }}][qa_value]" 
+                                                            id="qa-{{ $criteria->id }}-full" 
+                                                            value="full" 
+                                                            {{ $detail && $detail->qa_value == 'full' ? 'checked' : '' }}>
+                                                        <label for="qa-{{ $criteria->id }}-full" class="text-xs">Ya</label>
+                                                    </div>
+                                                    <div class="icheck-navy d-inline mx-xl-2 mb-1 mb-xl-0">
+                                                        <input type="radio" class="qa-radio" 
+                                                            name="qa[{{ $criteria->id }}][qa_value]" 
+                                                            id="qa-{{ $criteria->id }}-part" 
+                                                            value="partial" 
+                                                            {{ $detail && $detail->qa_value == 'partial' ? 'checked' : '' }}>
+                                                        <label for="qa-{{ $criteria->id }}-part" class="text-xs">Sebagian</label>
+                                                    </div>
+                                                    <div class="icheck-navy d-inline ml-xl-2">
+                                                        <input type="radio" class="qa-radio" 
+                                                            name="qa[{{ $criteria->id }}][qa_value]" 
+                                                            id="qa-{{ $criteria->id }}-none" 
+                                                            value="none" 
+                                                            {{ $detail && $detail->qa_value == 'none' ? 'checked' : '' }}>
+                                                        <label for="qa-{{ $criteria->id }}-none" class="text-xs">Tidak</label>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @endif
                                     </td>
                                     <td class="align-middle">
                                         <div class="form-group mb-0">
@@ -106,14 +142,31 @@
                                     <td class="align-middle">
                                         <textarea 
                                             name="answers[{{ $question->id }}][criteria][{{ $criteria->id }}][catatan]" 
-                                            class="form-control form-control-sm" 
+                                            class="form-control form-control-sm mb-2" 
                                             rows="3" 
                                             placeholder="Catatan..." {{ !$canEdit ? 'disabled' : '' }}>{{ $detail ? $detail->catatan : '' }}</textarea>
+                                        
+                                        {{-- QA Note Input --}}
+                                        @if(isset($isQaMode) && $isQaMode)
+                                            <textarea 
+                                                name="qa[{{ $criteria->id }}][catatan_qa]" 
+                                                class="form-control form-control-sm qa-note-input border-navy" 
+                                                rows="2" 
+                                                placeholder="Catatan QA Rendal...">{{ $catatanQa }}</textarea>
+                                        @endif
                                     </td>
                                     <td class="align-middle text-center">
                                         @if($canEdit)
                                             <button type="button" class="btn btn-primary btn-sm btn-save-criteria" 
                                                 title="Simpan Baris Ini"
+                                                data-indicator="{{ $question->id }}"
+                                                data-criteria="{{ $criteria->id }}"
+                                                data-kk="{{ $kertasKerja->id }}">
+                                                <i class="fas fa-save"></i>
+                                            </button>
+                                        @elseif(isset($isQaMode) && $isQaMode)
+                                            <button type="button" class="btn btn-navy btn-sm btn-save-qa" 
+                                                title="Simpan QA"
                                                 data-indicator="{{ $question->id }}"
                                                 data-criteria="{{ $criteria->id }}"
                                                 data-kk="{{ $kertasKerja->id }}">

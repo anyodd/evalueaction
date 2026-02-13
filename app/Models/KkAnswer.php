@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class KkAnswer extends Model
 {
     protected $table = 'kk_answers';
-    protected $fillable = ['kertas_kerja_id', 'indikator_id', 'nilai', 'catatan', 'ref_st_id'];
+    protected $fillable = ['kertas_kerja_id', 'indikator_id', 'nilai', 'nilai_qa', 'catatan', 'ref_st_id'];
 
     public function kertasKerja()
     {

@@ -98,6 +98,11 @@
                                                             <i class="fas fa-edit mr-1"></i> Buka KK
                                                         </a>
 
+                                                        {{-- Print Review Sheet --}}
+                                                        <a href="{{ route('kertas-kerja.review-sheet', $kk->id) }}" class="btn btn-outline-navy btn-sm rounded-pill px-3 mb-1" target="_blank">
+                                                            <i class="fas fa-print mr-1"></i> Lembar Review
+                                                        </a>
+
                                                         {{-- Submit Button (Draft -> Ketua OR Dalnis) --}}
                                                         @if(($kk->status_approval == 'Draft' || str_starts_with($kk->status_approval, 'Revisi')) && $kk->user_id == auth()->id())
                                                             <form action="{{ route('kertas-kerja.submit', $kk->id) }}" method="POST" class="d-inline">

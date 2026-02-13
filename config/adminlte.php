@@ -151,11 +151,6 @@ return [
             'icon'        => 'fas fa-fw fa-briefcase',
         ],
         [
-            'text'        => 'Review Berjenjang',
-            'url'         => 'review',
-            'icon'        => 'fas fa-fw fa-check-double',
-        ],
-        [
             'text'        => 'Pelaporan & QA',
             'url'         => 'laporan',
             'icon'        => 'fas fa-fw fa-chart-line',

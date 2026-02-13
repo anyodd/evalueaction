@@ -19,6 +19,7 @@ class KertasKerja extends Model
         'isi_kk',
         'status_approval',
         'nilai_akhir',
+        'nilai_akhir_qa',
         'file_pendukung',
     ];
 

@@ -33,10 +33,11 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('/kertas-kerja/{id}/submit', [App\Http\Controllers\KertasKerjaController::class, 'submit'])->name('kertas-kerja.submit');
     Route::post('/kertas-kerja/{id}/approve', [App\Http\Controllers\KertasKerjaController::class, 'approve'])->name('kertas-kerja.approve');
     Route::post('/kertas-kerja/{id}/reject', [App\Http\Controllers\KertasKerjaController::class, 'reject'])->name('kertas-kerja.reject');
-    Route::post('/kertas-kerja/update-single', [App\Http\Controllers\KertasKerjaController::class, 'updateSingle'])->name('kertas-kerja.update-single');
+    Route::get('/kertas-kerja/{id}/review-sheet', [App\Http\Controllers\KertasKerjaController::class, 'reviewSheet'])->name('kertas-kerja.review-sheet');
     
-    // Review
-    Route::get('review', [App\Http\Controllers\ReviewController::class, 'index'])->name('review.index');
+    // QA Rendal
+    Route::get('/kertas-kerja/{id}/qa', [App\Http\Controllers\KertasKerjaController::class, 'qa'])->name('kertas-kerja.qa');
+    Route::post('/kertas-kerja/update-qa-single', [App\Http\Controllers\KertasKerjaController::class, 'updateQaSingle'])->name('kertas-kerja.update-qa-single');
     
     // Laporan
     Route::get('laporan', [App\Http\Controllers\LaporanController::class, 'index'])->name('laporan.index');
@@ -60,4 +61,11 @@ Route::group(['middleware' => ['auth']], function () {
 
     // Profile
     Route::get('profile', [App\Http\Controllers\UserController::class, 'profile'])->name('profile');
+
+    // Notifications
+    Route::get('notifications/{id}/read', function ($id) {
+        $notification = auth()->user()->notifications()->findOrFail($id);
+        $notification->markAsRead();
+        return redirect($notification->data['url'] ?? route('home'));
+    })->name('notifications.read');
 });
