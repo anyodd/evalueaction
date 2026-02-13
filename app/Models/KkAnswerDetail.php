@@ -10,7 +10,7 @@ class KkAnswerDetail extends Model
     use HasFactory;
 
     protected $table = 'kk_answer_details';
-    protected $fillable = ['kk_answer_id', 'criteria_id', 'is_checked'];
+    protected $fillable = ['kk_answer_id', 'criteria_id', 'answer_value', 'score', 'catatan', 'evidence_file', 'evidence_link'];
 
     public function answer()
     {

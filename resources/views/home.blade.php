@@ -24,7 +24,7 @@
                     <div class="card-body p-4">
                         <div class="row align-items-center">
                             <div class="col-md-8">
-                                <h2 class="display-4 font-weight-bold"><span class="brand-e">e</span>-<span class="brand-value">Value</span>-<span class="brand-accent">A</span>ctio<span class="brand-n">N</span></h2>
+                                <h2 class="display-4 font-weight-bold"><span class="brand-e">e</span>-<span class="brand-value">Value</span>-<span class="brand-a">A</span><span class="brand-ctio">ctio</span><span class="brand-n">N</span></h2>
                                 <p class="lead">Sistem Monitoring dan Evaluasi Penugasan Terintegrasi.</p>
                                 <a href="{{ route('surat-tugas.create') }}" class="btn btn-outline-light btn-lg rounded-pill px-4 shadow">
                                     <i class="fas fa-plus-circle mr-2"></i> Buat Penugasan Baru
@@ -44,8 +44,8 @@
             <div class="col-lg-3 col-6">
                 <div class="small-box shadow animate__animated animate__fadeInUp" style="animation-delay: 0.1s">
                     <div class="inner p-4">
-                        <h3 class="font-weight-bold">15</h3>
-                        <p>Surat Tugas Aktif</p>
+                        <h3 class="font-weight-bold">{{ $totalST }}</h3>
+                        <p>Total Penugasan</p>
                     </div>
                     <div class="icon">
                         <i class="fas fa-file-invoice text-white-50"></i>
@@ -56,15 +56,15 @@
                 </div>
             </div>
             <div class="col-lg-3 col-6">
-                <div class="small-box bg-success shadow animate__animated animate__fadeInUp" style="animation-delay: 0.2s">
+                <div class="small-box bg-info shadow animate__animated animate__fadeInUp" style="animation-delay: 0.2s">
                     <div class="inner p-4">
-                        <h3 class="font-weight-bold">42</h3>
-                        <p>Kertas Kerja Selesai</p>
+                        <h3 class="font-weight-bold">{{ $newST }}</h3>
+                        <p>Penugasan Baru</p>
                     </div>
                     <div class="icon">
-                        <i class="fas fa-check-circle text-white-50"></i>
+                        <i class="fas fa-plus-circle text-white-50"></i>
                     </div>
-                    <a href="{{ route('kertas-kerja.index') }}" class="small-box-footer py-2">
+                    <a href="{{ route('surat-tugas.index') }}?status=Baru" class="small-box-footer py-2">
                         View Details <i class="fas fa-arrow-circle-right"></i>
                     </a>
                 </div>
@@ -72,27 +72,27 @@
             <div class="col-lg-3 col-6">
                 <div class="small-box bg-warning shadow animate__animated animate__fadeInUp" style="animation-delay: 0.3s">
                     <div class="inner p-4 text-white">
-                        <h3 class="font-weight-bold">08</h3>
-                        <p>Kertas Kerja Review</p>
+                        <h3 class="font-weight-bold">{{ $activeST }}</h3>
+                        <p>Sedang Berjalan</p>
                     </div>
                     <div class="icon">
-                        <i class="fas fa-clock text-white-50"></i>
+                        <i class="fas fa-spinner text-white-50"></i>
                     </div>
-                    <a href="{{ route('review.index') }}" class="small-box-footer py-2">
+                    <a href="{{ route('surat-tugas.index') }}?status=On Progress" class="small-box-footer py-2">
                         View Details <i class="fas fa-arrow-circle-right"></i>
                     </a>
                 </div>
             </div>
             <div class="col-lg-3 col-6">
-                <div class="small-box bg-danger shadow animate__animated animate__fadeInUp" style="animation-delay: 0.4s">
+                <div class="small-box bg-success shadow animate__animated animate__fadeInUp" style="animation-delay: 0.4s">
                     <div class="inner p-4">
-                        <h3 class="font-weight-bold">03</h3>
-                        <p>Perlu Perbaikan</p>
+                        <h3 class="font-weight-bold">{{ $completedST }}</h3>
+                        <p>Selesai</p>
                     </div>
                     <div class="icon">
-                        <i class="fas fa-exclamation-triangle text-white-50"></i>
+                        <i class="fas fa-check-circle text-white-50"></i>
                     </div>
-                    <a href="#" class="small-box-footer py-2">
+                    <a href="{{ route('surat-tugas.index') }}?status=Selesai" class="small-box-footer py-2">
                         View Details <i class="fas fa-arrow-circle-right"></i>
                     </a>
                 </div>
@@ -111,25 +111,33 @@
                             <table class="table table-striped table-hover m-0">
                                 <thead>
                                     <tr>
-                                        <th>Objek</th>
-                                        <th>Role</th>
+                                        <th>Objek Pengawasan</th>
+                                        <th>Jenis</th>
                                         <th>Status</th>
-                                        <th>Waktu</th>
+                                        <th>Update Terakhir</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <tr>
-                                        <td>Pemda Sultra</td>
-                                        <td><span class="badge badge-primary">Ketua Tim</span></td>
-                                        <td><span class="text-success"><i class="fas fa-check-circle"></i> Approved</span></td>
-                                        <td>2 Jam Lalu</td>
-                                    </tr>
-                                    <tr>
-                                        <td>Pemprov Jatim</td>
-                                        <td><span class="badge badge-info">Anggota</span></td>
-                                        <td><span class="text-warning"><i class="fas fa-spinner fa-spin"></i> On Review</span></td>
-                                        <td>5 Jam Lalu</td>
-                                    </tr>
+                                    @forelse($recentActivities as $st)
+                                        <tr>
+                                            <td>{{ $st->nama_objek }}</td>
+                                            <td><span class="badge badge-light">{{ $st->jenisPenugasan->nama_jenis ?? '-' }}</span></td>
+                                            <td>
+                                                @if($st->status == 'Selesai')
+                                                    <span class="badge badge-success">Selesai</span>
+                                                @elseif($st->status == 'On Progress')
+                                                    <span class="badge badge-warning text-white">On Progress</span>
+                                                @else
+                                                    <span class="badge badge-secondary">Baru</span>
+                                                @endif
+                                            </td>
+                                            <td>{{ $st->updated_at->diffForHumans() }}</td>
+                                        </tr>
+                                    @empty
+                                        <tr>
+                                            <td colspan="4" class="text-center text-muted py-3">Belum ada aktivitas penugasan.</td>
+                                        </tr>
+                                    @endforelse
                                 </tbody>
                             </table>
                         </div>
@@ -160,13 +168,7 @@
 @stop
 
 @section('css')
-    <style>
-        .brand-accent {
-            color: #fbbf24 !important; /* Amber/Gold */
-            text-shadow: 0 0 10px rgba(251, 191, 36, 0.3);
-            font-weight: 800;
-        }
-    </style>
+    {{-- Custom CSS already loaded via config --}}
 @stop
 
 @section('js')

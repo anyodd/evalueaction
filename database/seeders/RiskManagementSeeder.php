@@ -24,7 +24,7 @@ class RiskManagementSeeder extends Seeder
                 ['nama_penugasan' => 'Penilaian Maturitas Manajemen Risiko']
             );
 
-            // 2. Create Template Header for current year
+            // 2. Create Template Header
             $template = KkTemplate::create([
                 'jenis_penugasan_id' => $jenisMr->id,
                 'nama_template' => 'Kertas Kerja Maturitas MR 2026',
@@ -42,73 +42,88 @@ class RiskManagementSeeder extends Seeder
                 'bobot' => 40.00,
             ]);
 
-            // 3.1.1 Indikator: Kualitas Perencanaan (Child of Aspek Perencanaan)
-            // Note: In user's description, "Kualitas Perencanaan" is an Indicator under Aspect.
-            // And parameters are under this Indicator.
+            // 3.1.1 Indikator: Kualitas Perencanaan
             $indKualitas = TemplateIndicator::create([
                 'template_id' => $template->id,
                 'parent_id' => $aspekPerencanaan->id,
                 'uraian' => 'Kualitas Perencanaan',
-                'tipe' => 'header', // Grouping for parameters
-                'bobot' => 40.00, // Bobot Indikator thd Aspek (example from user image column 3 isn't clear if it's Aspect or Indicator weight, assuming Indicator)
+                'tipe' => 'header', // Grouping
+                'bobot' => 40.00, // Bobot Indikator terhadap Aspek
             ]);
 
-            // 3.1.1.1 Parameter 1: Adanya keterkaitan...
+            // 3.1.1.1 Parameter: Keselarasan Sasaran
             $param1 = TemplateIndicator::create([
                 'template_id' => $template->id,
                 'parent_id' => $indKualitas->id,
                 'uraian' => 'Adanya keterkaitan antara Sasaran BLU/BLUD dengan Sasaran Strategis K/L/Pemda',
-                'tipe' => 'criteria_tally', // New type for checklist based scoring
-                'bobot' => 30.00, // Bobot Parameter thd Indikator
+                'tipe' => 'criteria_tally', // Scoring Item
+                'bobot' => 25.00, // Bobot Parameter terhadap Indikator
             ]);
 
             // Criteria for Parameter 1
             $this->addCriteria($param1->id, [
-                'Keselarasan sasaran BLU/BLUD dengan arah kebijakan pembangunan nasional...',
-                'Keselarasan sasaran BLU/BLUD dengan arah kebijakan pembangunan nasional... (Point 2)',
-                'Keselarasan sasaran BLU/BLUD dengan arah kebijakan pembangunan nasional... (Point 3)',
-                'Keselarasan sasaran BLU/BLUD dengan arah kebijakan pembangunan nasional... (Point 4)',
-                'Keselarasan sasaran BLU/BLUD dengan arah kebijakan pembangunan nasional... (Point 5)',
+                'Terdapat dokumen rencana strategis (Renstra) yang sah (Skor: 1.0)',
+                'Terdapat keselarasan visi misi dengan K/L/Pemda (Skor: 1.0)',
+                'Terdapat indikator kinerja utama yang terukur (Skor: 1.0)',
             ]);
 
-             // 3.1.1.2 Parameter 2: Penetapan Sasaran Strategis...
+             // 3.1.1.2 Parameter: Penetapan Sasaran
              $param2 = TemplateIndicator::create([
                 'template_id' => $template->id,
                 'parent_id' => $indKualitas->id,
                 'uraian' => 'Penetapan Sasaran Strategis sudah tepat',
                 'tipe' => 'criteria_tally',
-                'bobot' => 30.00,
+                'bobot' => 25.00,
             ]);
-            $this->addCriteria($param2->id, ['Kriteria 1', 'Kriteria 2', 'Kriteria 3', 'Kriteria 4', 'Kriteria 5']);
+            $this->addCriteria($param2->id, ['Sasaran ditetapkan dengan metode SMART', 'Dokumentasi penetapan sasaran lengkap']);
 
-             // 3.1.1.3 Parameter 3: Penetapan Indikator Kinerja...
+             // 3.1.1.3 Parameter: Indikator Kinerja
              $param3 = TemplateIndicator::create([
                 'template_id' => $template->id,
                 'parent_id' => $indKualitas->id,
-                'uraian' => 'Penetapan Indikator Kinerja sudah tepat dan...',
+                'uraian' => 'Penetapan Indikator Kinerja sudah tepat',
                 'tipe' => 'criteria_tally',
-                'bobot' => 20.00,
+                'bobot' => 25.00,
             ]);
-            $this->addCriteria($param3->id, ['Kriteria 1', 'Kriteria 2', 'Kriteria 3', 'Kriteria 4', 'Kriteria 5']);
+            $this->addCriteria($param3->id, ['Indikator relevan dengan tujuan', 'Indikator dapat dicapai']);
 
-             // 3.1.1.4 Parameter 4: Penetapan Target Kinerja...
+             // 3.1.1.4 Parameter: Target Kinerja
              $param4 = TemplateIndicator::create([
                 'template_id' => $template->id,
                 'parent_id' => $indKualitas->id,
-                'uraian' => 'Penetapan Target Kinerja sudah baik',
+                'uraian' => 'Penetapan Target Kinerja menantang namun realistis',
                 'tipe' => 'criteria_tally',
-                'bobot' => 20.00,
+                'bobot' => 25.00,
             ]);
-            $this->addCriteria($param4->id, ['Kriteria 1', 'Kriteria 2', 'Kriteria 3', 'Kriteria 4', 'Kriteria 5']);
+            $this->addCriteria($param4->id, ['Target didasarkan pada data historis', 'Target disepakati pimpinan']);
 
 
             // 3.2 Aspek Kapabilitas (30%)
-            TemplateIndicator::create([
+            $aspekKapabilitas = TemplateIndicator::create([
                 'template_id' => $template->id,
                 'uraian' => 'KAPABILITAS',
                 'tipe' => 'header',
                 'bobot' => 30.00,
             ]);
+            
+            // Indikator Kapabilitas
+            $indKepemimpinan = TemplateIndicator::create([
+                'template_id' => $template->id,
+                'parent_id' => $aspekKapabilitas->id,
+                'uraian' => 'Kepemimpinan dan Budaya Risiko',
+                'tipe' => 'header',
+                'bobot' => 100.00,
+            ]);
+            
+            $paramKap1 = TemplateIndicator::create([
+                'template_id' => $template->id,
+                'parent_id' => $indKepemimpinan->id,
+                'uraian' => 'Komitmen Pimpinan terhadap Manajemen Risiko',
+                'tipe' => 'criteria_tally',
+                'bobot' => 100.00,
+            ]);
+            $this->addCriteria($paramKap1->id, ['Terdapat kebijakan MR', 'Pimpinan menjadi role model']);
+
 
             // 3.3 Aspek Hasil (30%)
             TemplateIndicator::create([

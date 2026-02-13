@@ -167,32 +167,47 @@ body {
 }
 
 .brand-e {
-    color: #38bdf8 !important;
-    /* Sky Blue */
-    text-shadow: 0 0 5px rgba(56, 189, 248, 0.2);
+    color: #3b82f6 !important;
+    /* Professional Blue */
     font-weight: 800;
 }
 
 .brand-value {
-    color: #14b8a6 !important;
-    /* Teal */
-    text-shadow: 0 0 5px rgba(20, 184, 166, 0.2);
+    color: #475569 !important;
+    /* Cool Grey */
     font-weight: 700;
     font-style: italic;
 }
 
-.brand-accent {
-    color: #fbbf24 !important;
-    /* Amber/Gold for 'A' */
-    text-shadow: 0 0 5px rgba(251, 191, 36, 0.2);
+.brand-a {
+    color: #e43b3b !important;
+    /* Merah Brand */
+    font-weight: 800;
+}
+
+.brand-ctio {
+    color: #00a8a8 !important;
+    /* Hijau Turquoise Brand */
     font-weight: 800;
 }
 
 .brand-n {
-    color: #f59e0b !important;
-    /* Darker Amber/Orange for 'N' */
-    text-shadow: 0 0 5px rgba(245, 158, 11, 0.2);
+    color: #f39c12 !important;
+    /* Orange Brand */
     font-weight: 800;
+}
+
+/* Also for login header spans */
+.text-red-brand {
+    color: #e43b3b !important;
+}
+
+.text-turquoise-brand {
+    color: #00a8a8 !important;
+}
+
+.text-orange-brand {
+    color: #f39c12 !important;
 }
 
 /* Premium Scrollbar */

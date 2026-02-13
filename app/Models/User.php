@@ -69,4 +69,15 @@ class User extends Authenticatable
     {
         return 'profile';
     }
+
+    /**
+     * Check if user has a specific role.
+     *
+     * @param string $roleName
+     * @return bool
+     */
+    public function hasRole($roleName)
+    {
+        return $this->role && $this->role->name === $roleName;
+    }
 }

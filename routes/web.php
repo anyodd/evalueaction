@@ -30,6 +30,10 @@ Route::group(['middleware' => ['auth']], function () {
     Route::get('kertas-kerja/generate/{st_id}', [App\Http\Controllers\KertasKerjaController::class, 'generate'])->name('kertas-kerja.generate');
     Route::get('kertas-kerja/fetch-reference', [App\Http\Controllers\KertasKerjaController::class, 'fetchReference'])->name('kertas-kerja.fetch-reference');
     Route::resource('kertas-kerja', App\Http\Controllers\KertasKerjaController::class);
+    Route::post('/kertas-kerja/{id}/submit', [App\Http\Controllers\KertasKerjaController::class, 'submit'])->name('kertas-kerja.submit');
+    Route::post('/kertas-kerja/{id}/approve', [App\Http\Controllers\KertasKerjaController::class, 'approve'])->name('kertas-kerja.approve');
+    Route::post('/kertas-kerja/{id}/reject', [App\Http\Controllers\KertasKerjaController::class, 'reject'])->name('kertas-kerja.reject');
+    Route::post('/kertas-kerja/update-single', [App\Http\Controllers\KertasKerjaController::class, 'updateSingle'])->name('kertas-kerja.update-single');
     
     // Review
     Route::get('review', [App\Http\Controllers\ReviewController::class, 'index'])->name('review.index');

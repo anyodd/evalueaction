@@ -4,14 +4,25 @@
 
 @section('content_header')
     <div class="container-fluid animate__animated animate__fadeIn">
-        <h1 class="m-0 text-dark font-weight-bold">Isi Kertas Kerja</h1>
-        <small class="text-muted">{{ $kertasKerja->judul_kk }}</small>
+        <h1 class="m-0 text-dark font-weight-bold">Isi Kertas Kerja 
+            @if(!$canEdit) 
+                <span class="badge badge-secondary shadow-sm ml-2" style="font-size: 0.5em; vertical-align: middle;">
+                    <i class="fas fa-eye mr-1"></i> Mode View / Review
+                </span> 
+            @endif
+        </h1>
+        <div class="d-flex justify-content-between align-items-center">
+            <small class="text-muted">{{ $kertasKerja->judul_kk }}</small>
+            <a href="{{ route('kertas-kerja.index') }}" class="btn btn-default btn-sm shadow-sm">
+                <i class="fas fa-arrow-left mr-1"></i> Kembali ke Daftar
+            </a>
+        </div>
     </div>
 @stop
 
 @section('content')
     <div class="container-fluid animate__animated animate__fadeInUp">
-        <form action="{{ route('kertas-kerja.update', $kertasKerja->id) }}" method="POST">
+        <form action="{{ route('kertas-kerja.update', $kertasKerja->id) }}" method="POST" enctype="multipart/form-data">
             @csrf
             @method('PUT')
             
@@ -56,18 +67,45 @@
 
                 </div>
                 <div class="card-footer bg-white border-0 text-right pb-4">
-                    <button type="submit" class="btn btn-primary rounded-pill px-5 shadow-sm">
-                        <i class="fas fa-save mr-2"></i> Simpan Kertas Kerja
-                    </button>
+                    @if($canEdit)
+                        <button type="submit" class="btn btn-primary rounded-pill px-5 shadow-sm">
+                            <i class="fas fa-save mr-2"></i> Simpan Kertas Kerja
+                        </button>
+                    @else
+                        <div class="alert alert-info d-inline-block rounded-pill px-4 shadow-sm mb-0">
+                            <i class="fas fa-info-circle mr-2"></i> Anda dalam mode **Read-Only**. Hubungi Ketua Tim atau Dalnis jika ada data yang perlu diubah.
+                        </div>
+                    @endif
                 </div>
             </div>
         </form>
     </div>
 @stop
 
+@section('css')
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+@stop
+
 @section('js')
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script>
         $(document).ready(function() {
+            // Criteria Radio Logic
+            $(document).on('change', '.criteria-radio', function() {
+                let val = $(this).val();
+                let targetId = $(this).data('target'); // #file-123
+                let fileInput = $(targetId);
+                let linkInput = fileInput.next('input[type="text"]');
+
+                if (val === 'none') {
+                    fileInput.prop('disabled', true);
+                    linkInput.prop('disabled', true);
+                } else {
+                    fileInput.prop('disabled', false);
+                    linkInput.prop('disabled', false);
+                }
+            });
+
             // Reference Fetching Logic
             $('.fetch-ref').click(function() {
                 let btn = $(this);
@@ -105,6 +143,91 @@
                     },
                     complete: function() {
                         btn.prop('disabled', false).html('<i class="fas fa-sync-alt mr-1"></i> Ambil');
+                    }
+                });
+            });
+            // AJAX Save Criteria
+            $(document).on('click', '.btn-save-criteria', function() {
+                let btn = $(this);
+                let indicatorId = btn.data('indicator');
+                let criteriaId = btn.data('criteria');
+                let kkId = btn.data('kk');
+                
+                // Collect Data
+                // 1. Radio Value
+                let radioName = `answers[${indicatorId}][criteria][${criteriaId}][value]`;
+                let value = $(`input[name="${radioName}"]:checked`).val();
+                
+                if (!value) {
+                    toastr.warning('Pilih nilai (Ya/Sebagian/Tidak) terlebih dahulu.');
+                    return;
+                }
+
+                // 2. File
+                let fileInputId = `#file-${criteriaId}`;
+                let fileInput = $(fileInputId)[0];
+                let file = fileInput.files.length > 0 ? fileInput.files[0] : null;
+
+                // 3. Notes & Link
+                let noteName = `answers[${indicatorId}][criteria][${criteriaId}][catatan]`;
+                let note = $(`textarea[name="${noteName}"]`).val();
+                
+                let linkName = `answers[${indicatorId}][criteria][${criteriaId}][link]`;
+                let link = $(`input[name="${linkName}"]`).val();
+
+                // Prepare FormData
+                let formData = new FormData();
+                let csrfToken = $('meta[name="csrf-token"]').attr('content');
+                
+                if (!csrfToken) {
+                    toastr.error('CSRF Token missing. Silakan refresh halaman.');
+                    return;
+                }
+
+                formData.append('_token', csrfToken);
+                formData.append('kk_id', kkId);
+                formData.append('indicator_id', indicatorId);
+                formData.append('criteria_id', criteriaId);
+                formData.append('value', value);
+                formData.append('catatan', note);
+                if (link) formData.append('link', link);
+                if (file) formData.append('evidence', file);
+
+                // UI Loading
+                let originalIcon = btn.html();
+                btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+
+                // AJAX
+                $.ajax({
+                    url: '/kertas-kerja/update-single', // Explicit URL to avoid route cache issues
+                    type: 'POST',
+                    data: formData,
+                    contentType: false,
+                    processData: false,
+                    success: function(response) {
+                        if(response.success) {
+                            toastr.success('Data tersimpan! Skor: ' + response.param_score + '%');
+                        } else {
+                            toastr.error(response.message || 'Gagal menyimpan.');
+                        }
+                    },
+                    error: function(xhr, status, error) {
+                        let msg = 'Gagal menyimpan. ';
+                        if(xhr.responseJSON && xhr.responseJSON.message) {
+                            msg += xhr.responseJSON.message;
+                            // Check for validation errors
+                            if (xhr.responseJSON.errors) {
+                                let errors = Object.values(xhr.responseJSON.errors).flat();
+                                msg += ' ' + errors.join(', ');
+                            }
+                        } else {
+                            msg += error + ' (' + xhr.status + ')';
+                        }
+                        console.error('Save Error:', xhr);
+                        toastr.error(msg);
+                    },
+                    complete: function() {
+                        btn.prop('disabled', false).html(originalIcon);
                     }
                 });
             });

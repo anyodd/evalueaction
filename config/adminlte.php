@@ -25,7 +25,7 @@ return [
         'allowed' => true,
     ],
 
-    'logo' => '<span class="brand-e">e</span>-<span class="brand-value">Value</span>-<span class="brand-accent">A</span>ctio<span class="brand-n">N</span>',
+    'logo' => '<span class="brand-e">e</span>-<span class="brand-value">Value</span>-<span class="brand-a">A</span><span class="brand-ctio">ctio</span><span class="brand-n">N</span>',
     'logo_img' => 'img/logo.svg',
     'logo_img_class' => 'brand-image elevation-3',
     'logo_img_xl' => null,

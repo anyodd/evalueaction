@@ -80,19 +80,23 @@ class TemplateController extends Controller
     public function storeIndicator(Request $request, KkTemplate $template)
     {
         $request->validate([
-            'label' => 'required',
-            'weight' => 'nullable|numeric',
+            'uraian' => 'required',
+            'bobot' => 'nullable|numeric',
         ]);
 
-        TemplateIndicator::create([
-            'template_id' => $template->id,
-            'parent_id' => $request->parent_id,
-            'label' => $request->label,
-            'weight' => $request->weight ?? 0,
-            'type' => $request->type ?? 'score',
-        ]);
+        try {
+            TemplateIndicator::create([
+                'template_id' => $template->id,
+                'parent_id' => !empty($request->parent_id) ? $request->parent_id : null,
+                'uraian' => $request->uraian,
+                'bobot' => is_numeric($request->bobot) ? $request->bobot : 0,
+                'tipe' => !empty($request->tipe) ? $request->tipe : 'score_manual',
+            ]);
 
-        return back()->with('success', 'Indicator/Parameter added.');
+            return back()->with('success', 'Indicator/Parameter added.');
+        } catch (\Exception $e) {
+            return back()->withErrors(['message' => 'Error saving data: ' . $e->getMessage()])->withInput();
+        }
     }
 
     public function destroyIndicator(TemplateIndicator $indicator)
@@ -105,12 +109,12 @@ class TemplateController extends Controller
     public function storeCriteria(Request $request, TemplateIndicator $indicator)
     {
         $request->validate([
-            'label' => 'required',
+            'uraian' => 'required',
         ]);
 
         TemplateCriteria::create([
             'indicator_id' => $indicator->id,
-            'label' => $request->label,
+            'uraian' => $request->uraian,
         ]);
 
         return back()->with('success', 'Criteria added.');
