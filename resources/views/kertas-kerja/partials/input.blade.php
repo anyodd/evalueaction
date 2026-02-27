@@ -24,17 +24,41 @@
                                 <th class="align-middle" style="min-width: 200px;">Nilai</th>
                                 <th class="align-middle" style="min-width: 250px;">Bukti Dukung</th>
                                 <th class="align-middle" style="min-width: 200px;">Catatan / Keterangan</th>
+                                @if(isset($isQaMode) && $isQaMode)
+                                    <th class="align-middle" style="min-width: 200px;">Tanggapan Perwakilan</th>
+                                @endif
                                 <th class="align-middle" style="width: 50px;">Aksi</th>
                             </tr>
                         </thead>
                         <tbody>
-                            @foreach($question->criteria as $criteria)
+                            @foreach($question->criteria->sortBy('level') as $criteria)
                                 @php
                                     $detail = $answer ? $answer->details->where('criteria_id', $criteria->id)->first() : null;
                                     $val = $detail ? $detail->answer_value : 'none'; 
                                     $scoreQa = $detail ? $detail->score_qa : '';
                                     $catatanQa = $detail ? $detail->catatan_qa : '';
+                                    $metode = $kertasKerja->template->metode_penilaian ?? 'tally';
+                                    $isLevelBased = in_array($metode, ['building_block', 'criteria_fulfillment']);
+                                    $isBuildingBlock = $metode === 'building_block';
                                 @endphp
+
+                                {{-- Level Header Row (for level-based scoring) --}}
+                                @if($isLevelBased && $criteria->level > 0)
+                                    @php
+                                        $prevCriteria = $question->criteria->sortBy('level')->where('id', '<', $criteria->id)->last();
+                                        $showLevelHeader = !$prevCriteria || $prevCriteria->level !== $criteria->level;
+                                    @endphp
+                                    @if($showLevelHeader)
+                                        <tr class="bg-light">
+                                            <td colspan="{{ isset($isQaMode) && $isQaMode ? '7' : '5' }}" class="py-1">
+                                                <strong class="text-primary">
+                                                    <i class="fas fa-layer-group mr-1"></i>Level {{ $criteria->level }}
+                                                </strong>
+                                            </td>
+                                        </tr>
+                                    @endif
+                                @endif
+
                                 <tr>
                                     <td class="text-sm align-middle">{{ $criteria->uraian }}</td>
                                     <td class="align-middle">
@@ -49,6 +73,7 @@
                                                     {{ $val == 'full' ? 'checked' : '' }} {{ !$canEdit ? 'disabled' : '' }}>
                                                 <label for="c-{{ $criteria->id }}-full">Ya</label>
                                             </div>
+                                            @if(!isset($isBuildingBlock) || !$isBuildingBlock)
                                             <div class="icheck-warning d-inline mx-xl-2 mb-1 mb-xl-0">
                                                 <input type="radio" class="criteria-radio" 
                                                     name="answers[{{ $question->id }}][criteria][{{ $criteria->id }}][value]" 
@@ -58,6 +83,7 @@
                                                     {{ $val == 'partial' ? 'checked' : '' }} {{ !$canEdit ? 'disabled' : '' }}>
                                                 <label for="c-{{ $criteria->id }}-part">Sebagian</label>
                                             </div>
+                                            @endif
                                             <div class="icheck-danger d-inline ml-xl-2">
                                                 <input type="radio" class="criteria-radio" 
                                                     name="answers[{{ $question->id }}][criteria][{{ $criteria->id }}][value]" 
@@ -74,12 +100,14 @@
                                             <div class="mt-2 border-top pt-2 bg-light p-2 rounded">
                                                 <label class="text-xs font-weight-bold text-navy mb-1">Koreksi QA:</label>
                                                 <div class="d-flex flex-column flex-xl-row justify-content-start align-items-start align-items-xl-center">
+                                                    @php $qaDisabled = isset($canEditQa) && !$canEditQa ? 'disabled' : ''; @endphp
                                                     <div class="icheck-navy d-inline mr-xl-2 mb-1 mb-xl-0">
                                                         <input type="radio" class="qa-radio" 
                                                             name="qa[{{ $criteria->id }}][qa_value]" 
                                                             id="qa-{{ $criteria->id }}-full" 
                                                             value="full" 
-                                                            {{ $detail && $detail->qa_value == 'full' ? 'checked' : '' }}>
+                                                            {{ $detail && $detail->qa_value == 'full' ? 'checked' : '' }} 
+                                                            {{ $qaDisabled }}>
                                                         <label for="qa-{{ $criteria->id }}-full" class="text-xs">Ya</label>
                                                     </div>
                                                     <div class="icheck-navy d-inline mx-xl-2 mb-1 mb-xl-0">
@@ -87,7 +115,8 @@
                                                             name="qa[{{ $criteria->id }}][qa_value]" 
                                                             id="qa-{{ $criteria->id }}-part" 
                                                             value="partial" 
-                                                            {{ $detail && $detail->qa_value == 'partial' ? 'checked' : '' }}>
+                                                            {{ $detail && $detail->qa_value == 'partial' ? 'checked' : '' }}
+                                                            {{ $qaDisabled }}>
                                                         <label for="qa-{{ $criteria->id }}-part" class="text-xs">Sebagian</label>
                                                     </div>
                                                     <div class="icheck-navy d-inline ml-xl-2">
@@ -95,7 +124,8 @@
                                                             name="qa[{{ $criteria->id }}][qa_value]" 
                                                             id="qa-{{ $criteria->id }}-none" 
                                                             value="none" 
-                                                            {{ $detail && $detail->qa_value == 'none' ? 'checked' : '' }}>
+                                                            {{ $detail && $detail->qa_value == 'none' ? 'checked' : '' }}
+                                                            {{ $qaDisabled }}>
                                                         <label for="qa-{{ $criteria->id }}-none" class="text-xs">Tidak</label>
                                                     </div>
                                                 </div>
@@ -148,13 +178,33 @@
                                         
                                         {{-- QA Note Input --}}
                                         @if(isset($isQaMode) && $isQaMode)
+                                            <label class="text-xs font-weight-bold text-navy mt-2">Catatan QA:</label>
                                             <textarea 
                                                 name="qa[{{ $criteria->id }}][catatan_qa]" 
                                                 class="form-control form-control-sm qa-note-input border-navy" 
                                                 rows="2" 
-                                                placeholder="Catatan QA Rendal...">{{ $catatanQa }}</textarea>
+                                                placeholder="Catatan QA Rendal..." {{ $qaDisabled }}>{{ $catatanQa }}</textarea>
                                         @endif
                                     </td>
+                                    
+                                    {{-- Tanggapan Column --}}
+                                    @if(isset($isQaMode) && $isQaMode)
+                                        <td class="align-middle">
+                                            <textarea 
+                                                class="form-control form-control-sm qa-tanggapan-input" 
+                                                rows="3" 
+                                                name="qa[{{ $criteria->id }}][tanggapan_qa]"
+                                                placeholder="Tulis tanggapan..."
+                                                {{ isset($canEditResponse) && !$canEditResponse ? 'disabled' : '' }}>{{ $detail ? $detail->tanggapan_qa : '' }}</textarea>
+                                            
+                                            @if(isset($canEditResponse) && $canEditResponse)
+                                                <button type="button" class="btn btn-xs btn-primary mt-2 btn-block btn-save-tanggapan" data-kk="{{ $kertasKerja->id }}" data-criteria="{{ $criteria->id }}">
+                                                    <i class="fas fa-reply"></i> Simpan Tanggapan
+                                                </button>
+                                            @endif
+                                        </td>
+                                    @endif
+
                                     <td class="align-middle text-center">
                                         @if($canEdit)
                                             <button type="button" class="btn btn-primary btn-sm btn-save-criteria" 
@@ -164,7 +214,7 @@
                                                 data-kk="{{ $kertasKerja->id }}">
                                                 <i class="fas fa-save"></i>
                                             </button>
-                                        @elseif(isset($isQaMode) && $isQaMode)
+                                        @elseif(isset($isQaMode) && $isQaMode && isset($canEditQa) && $canEditQa)
                                             <button type="button" class="btn btn-navy btn-sm btn-save-qa" 
                                                 title="Simpan QA"
                                                 data-indicator="{{ $question->id }}"
@@ -182,7 +232,23 @@
                     </table>
                 </div>
                 <div class="mt-2 text-right">
-                    <span class="badge badge-info p-2" style="font-size: 0.9em">Skor Parameter: {{ number_format((float)$nilai, 0) }}%</span>
+                    @php
+                        $metodeParam = $kertasKerja->template->metode_penilaian ?? 'tally';
+                        $isLevelParam = in_array($metodeParam, ['building_block', 'criteria_fulfillment']);
+                    @endphp
+                    @if($isLevelParam)
+                        <span class="badge badge-info p-2 score-badge" 
+                              id="score-param-{{ $question->id }}"
+                              data-indicator-id="{{ $question->id }}"
+                              style="font-size: 0.9em">
+                            Skor: <strong>{{ number_format((float)$nilai, 2) }}</strong> (Level {{ floor($nilai) }})
+                        </span>
+                    @else
+                        <span class="badge badge-info p-2 score-badge" 
+                              id="score-param-{{ $question->id }}"
+                              data-indicator-id="{{ $question->id }}"
+                              style="font-size: 0.9em">Skor Parameter: {{ number_format((float)$nilai, 0) }}%</span>
+                    @endif
                 </div>
             </div>
         </div>

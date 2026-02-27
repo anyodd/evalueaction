@@ -20,7 +20,9 @@ class KertasKerja extends Model
         'status_approval',
         'nilai_akhir',
         'nilai_akhir_qa',
+        'status_qa',
         'file_pendukung',
+        'file_laporan',
     ];
 
     public function template()
@@ -46,5 +48,10 @@ class KertasKerja extends Model
     public function reviewNotes()
     {
         return $this->hasMany(ReviewNote::class, 'kk_id');
+    }
+
+    public function langkahProgramKerja()
+    {
+        return $this->hasMany(PkLangkah::class, 'kertas_kerja_id');
     }
 }

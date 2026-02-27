@@ -1,4 +1,4 @@
-/* Custom Styles for e-Value-ActioN */
+/* Custom Styles for evalueaction */
 :root {
     --primary-gradient: linear-gradient(135deg, #1e3a8a 0%, #3b82f6 100%);
     --secondary-gradient: linear-gradient(135deg, #4b5563 0%, #9ca3af 100%);
@@ -13,11 +13,46 @@ body {
     background-color: #f4f6f9;
 }
 
-/* Sidebar Customization */
-.main-sidebar {
-    background: #0f172a !important;
-    /* Slate 900 */
+/* Brand Colors - Modern & Vibrant */
+.brand-e {
+    color: #2563eb;
+    font-weight: 800;
+    letter-spacing: -1px;
 }
+
+/* Blue 600 */
+.brand-value {
+    color: #334155;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+/* Slate 700 */
+.brand-a {
+    color: #db2777;
+    font-weight: 800;
+}
+
+/* Pink 600 */
+.brand-ctio {
+    color: #0891b2;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+}
+
+/* Cyan 600 */
+.brand-n {
+    color: #16a34a;
+    font-weight: 800;
+}
+
+/* Green 600 */
+
+/* Sidebar Customization */
+/* Sidebar Customization */
+/* .main-sidebar {
+    background: #0f172a !important; 
+} */
 
 .nav-sidebar .nav-item>.nav-link.active {
     background: var(--primary-gradient) !important;

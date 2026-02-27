@@ -35,6 +35,16 @@
                 </div>
 
                 <div class="form-group">
+                    <label>Metode Penilaian</label>
+                    <select name="metode_penilaian" class="form-control">
+                        <option value="tally" {{ $template->metode_penilaian === 'tally' ? 'selected' : '' }}>Tally — Ya/Sebagian/Tidak → Persentase (%)</option>
+                        <option value="building_block" {{ $template->metode_penilaian === 'building_block' ? 'selected' : '' }}>Building Block — Level 1-5 sekuensial (Ya/Tidak)</option>
+                        <option value="criteria_fulfillment" {{ $template->metode_penilaian === 'criteria_fulfillment' ? 'selected' : '' }}>Pemenuhan Kriteria — Level 1-5 independen (Ya/Sebagian/Tidak)</option>
+                    </select>
+                    <small class="form-text text-muted">Pilih metode scoring yang digunakan template ini.</small>
+                </div>
+
+                <div class="form-group">
                     <div class="custom-control custom-switch">
                         <input type="checkbox" class="custom-control-input" id="is_active" name="is_active" value="1" {{ $template->is_active ? 'checked' : '' }}>
                         <label class="custom-control-label" for="is_active">Aktif (Dapat digunakan di Surat Tugas)</label>

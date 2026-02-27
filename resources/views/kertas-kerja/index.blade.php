@@ -103,16 +103,31 @@
                                                             <i class="fas fa-print mr-1"></i> Lembar Review
                                                         </a>
 
-                                                        {{-- Submit Button (Draft -> Ketua OR Dalnis) --}}
-                                                        @if(($kk->status_approval == 'Draft' || str_starts_with($kk->status_approval, 'Revisi')) && $kk->user_id == auth()->id())
+                                                        {{-- Submit Button (Draft/Revisi -> Ketua OR Dalnis) --}}
+                                                        {{-- Allow Creator OR Ketua Tim to submit --}}
+                                                        @if(($kk->status_approval == 'Draft' || str_starts_with($kk->status_approval, 'Revisi')) && ($kk->user_id == auth()->id() || $myRole == 'Ketua Tim'))
                                                             <form action="{{ route('kertas-kerja.submit', $kk->id) }}" method="POST" class="d-inline">
                                                                 @csrf
                                                                 @if($myRole == 'Ketua Tim')
-                                                                    <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 mb-1" onclick="return confirm('Kirim ke Dalnis? Data akan dikunci.')">
+                                                                    @php
+                                                                        $isDraft = $kk->status_approval == 'Draft';
+                                                                        $msgTitle = $isDraft ? 'Status Masih Draft' : 'Kirim ke Dalnis?';
+                                                                        $msgText = $isDraft ? 'Belum selesai dikerjakan Anggota. Yakin ingin lanjut kirim?' : 'Dokumen akan dikunci dan dikirim ke Dalnis.';
+                                                                        $msgIcon = $isDraft ? 'warning' : 'question';
+                                                                    @endphp
+                                                                    <button type="button" class="btn btn-primary btn-sm rounded-pill px-3 mb-1 btn-confirm" 
+                                                                        data-title="{{ $msgTitle }}" 
+                                                                        data-text="{{ $msgText }}" 
+                                                                        data-icon="{{ $msgIcon }}"
+                                                                        data-confirm-text="Ya, Kirim">
                                                                         <i class="fas fa-paper-plane mr-1"></i> Kirim ke Dalnis
                                                                     </button>
                                                                 @else
-                                                                    <button type="submit" class="btn btn-info btn-sm rounded-pill px-3 mb-1" onclick="return confirm('Lapor ke Ketua Tim bahwa KK sudah selesai diisi?')">
+                                                                    <button type="button" class="btn btn-info btn-sm rounded-pill px-3 mb-1 btn-confirm"
+                                                                        data-title="Lapor Selesai?"
+                                                                        data-text="Lapor ke Ketua Tim bahwa KK sudah selesai diisi?"
+                                                                        data-icon="info"
+                                                                        data-confirm-text="Ya, Lapor">
                                                                         <i class="fas fa-bullhorn mr-1"></i> Lapor ke Ketua
                                                                     </button>
                                                                 @endif
@@ -123,13 +138,21 @@
                                                         @if($kk->status_approval == 'Review Ketua' && ($myRole == 'Ketua Tim' || $isSuperadmin))
                                                             <form action="{{ route('kertas-kerja.approve', $kk->id) }}" method="POST" class="d-inline">
                                                                 @csrf
-                                                                <button type="submit" class="btn btn-primary btn-sm rounded-pill px-3 mb-1" title="Kirim ke Dalnis" onclick="return confirm('Kirim ke Dalnis? Data akan dikunci.')">
+                                                                <button type="button" class="btn btn-primary btn-sm rounded-pill px-3 mb-1 btn-confirm"
+                                                                    data-title="Setujui & Kirim?"
+                                                                    data-text="Kirim ke Dalnis? Data akan dikunci."
+                                                                    data-confirm-text="Ya, Kirim">
                                                                     <i class="fas fa-paper-plane mr-1"></i> Kirim ke Dalnis
                                                                 </button>
                                                             </form>
                                                             <form action="{{ route('kertas-kerja.reject', $kk->id) }}" method="POST" class="d-inline">
                                                                 @csrf
-                                                                <button type="submit" class="btn btn-warning btn-sm rounded-pill px-3 mb-1" title="Kembalikan ke Anggota" onclick="return confirm('Kembalikan ke Anggota?')">
+                                                                <button type="button" class="btn btn-warning btn-sm rounded-pill px-3 mb-1 btn-confirm"
+                                                                    data-title="Kembalikan?"
+                                                                    data-text="Kembalikan dokumen ke Anggota Tim?"
+                                                                    data-icon="warning"
+                                                                    data-confirm-color="#ffc107"
+                                                                    data-confirm-text="Ya, Kembalikan">
                                                                     <i class="fas fa-undo mr-1"></i> Kembalikan
                                                                 </button>
                                                             </form>
@@ -139,14 +162,36 @@
                                                         )
                                                             <form action="{{ route('kertas-kerja.approve', $kk->id) }}" method="POST" class="d-inline">
                                                                 @csrf
-                                                                <button type="submit" class="btn btn-success btn-sm rounded-pill px-3 mb-1" title="Setuju">
+                                                                <button type="button" class="btn btn-success btn-sm rounded-pill px-3 mb-1 btn-confirm"
+                                                                    data-title="Approve Dokumen?"
+                                                                    data-text="Setujui dan teruskan ke tahap berikutnya?"
+                                                                    data-icon="success"
+                                                                    data-confirm-color="#28a745"
+                                                                    data-confirm-text="Ya, Approve">
                                                                     <i class="fas fa-check"></i> Approve
                                                                 </button>
                                                             </form>
                                                             <form action="{{ route('kertas-kerja.reject', $kk->id) }}" method="POST" class="d-inline">
                                                                 @csrf
-                                                                <button type="submit" class="btn btn-danger btn-sm rounded-pill px-3 mb-1" title="Tolak / Revisi" onclick="return confirm('Kembalikan untuk revisi?')">
+                                                                <button type="button" class="btn btn-danger btn-sm rounded-pill px-3 mb-1 btn-confirm"
+                                                                    data-title="Tolak / Revisi?"
+                                                                    data-text="Kembalikan dokumen ke Ketua Tim untuk perbaikan?"
+                                                                    data-icon="error"
+                                                                    data-confirm-color="#dc3545"
+                                                                    data-confirm-text="Ya, Reject">
                                                                     <i class="fas fa-times"></i> Reject
+                                                                </button>
+                                                            </form>
+                                                        @elseif($kk->status_approval == 'Final' && ($myRole == 'Korwas' || $myRole == 'Dalnis' || $isSuperadmin))
+                                                            <form action="{{ route('kertas-kerja.unfinalize-approval', $kk->id) }}" method="POST" class="d-inline">
+                                                                @csrf
+                                                                <button type="button" class="btn btn-warning btn-sm rounded-pill px-3 mb-1 btn-confirm"
+                                                                    data-title="Tarik Kembali?"
+                                                                    data-text="Tarik kembali dokumen ke Posisi Korwas untuk diedit?"
+                                                                    data-icon="warning"
+                                                                    data-confirm-color="#ffc107"
+                                                                    data-confirm-text="Ya, Tarik">
+                                                                    <i class="fas fa-undo-alt mr-1"></i> Tarik Final (Edit Korwas)
                                                                 </button>
                                                             </form>
                                                         @endif

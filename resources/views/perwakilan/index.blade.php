@@ -45,7 +45,11 @@
                                             <form action="{{ route('perwakilan.destroy', $p->id) }}" method="POST" class="d-inline">
                                                 @csrf
                                                 @method('DELETE')
-                                                <button type="submit" class="btn btn-danger btn-xs shadow-none" title="Hapus" onclick="return confirm('Apakah Anda yakin ingin menghapus perwakilan ini?')">
+                                                <button type="button" class="btn btn-danger btn-xs shadow-none btn-confirm" 
+                                                    title="Hapus" 
+                                                    data-title="Hapus Perwakilan?"
+                                                    data-text="Apakah Anda yakin ingin menghapus perwakilan ini?"
+                                                    data-icon="warning">
                                                     <i class="fas fa-trash"></i>
                                                 </button>
                                             </form>

@@ -61,9 +61,9 @@ class KertasKerjaController extends Controller
         $isSuperadmin = $user->hasRole('Superadmin');
         
         // Get User Role in this specific ST
-        $roleInTeam = \App\Models\StPersonel::where('st_id', $kertasKerja->st_id)
+        $roleInTeam = trim((string)\App\Models\StPersonel::where('st_id', $kertasKerja->st_id)
             ->where('user_id', $user->id)
-            ->value('role_dalam_tim');
+            ->value('role_dalam_tim'));
 
         $isCreator = $kertasKerja->user_id == $user->id;
         $isKetua = $roleInTeam == 'Ketua Tim';
@@ -86,11 +86,27 @@ class KertasKerjaController extends Controller
     } elseif ($isRendal) {
         $canEdit = false; // Rendal can view but not edit content directly
     } elseif ($isMemberOfTeam) {
-        if ($kertasKerja->status_approval == 'Draft' || str_starts_with($kertasKerja->status_approval, 'Revisi')) {
-            $canEdit = true;
-        }
-        elseif ($kertasKerja->status_approval == 'Review Ketua') {
+        // TIERED PERMISSION LOGIC (Collaborative View)
+        // 1. Posisi Ketua Tim (Draft / Revisi / Review Ketua)
+        if ($kertasKerja->status_approval == 'Draft' || 
+            str_starts_with($kertasKerja->status_approval, 'Revisi') || 
+            $kertasKerja->status_approval == 'Review Ketua') {
+            
             if ($isCreator || $isKetua) $canEdit = true;
+        }
+        // 2. Posisi Dalnis
+        elseif ($kertasKerja->status_approval == 'Review Dalnis') {
+            $roleInTeam = trim((string)\App\Models\StPersonel::where('st_id', $kertasKerja->st_id)
+                ->where('user_id', $user->id)
+                ->value('role_dalam_tim'));
+            if ($roleInTeam == 'Dalnis') $canEdit = true;
+        }
+        // 3. Posisi Korwas
+        elseif ($kertasKerja->status_approval == 'Review Korwas') {
+            $roleInTeam = trim((string)\App\Models\StPersonel::where('st_id', $kertasKerja->st_id)
+                ->where('user_id', $user->id)
+                ->value('role_dalam_tim'));
+            if ($roleInTeam == 'Korwas') $canEdit = true;
         }
     }
 
@@ -121,20 +137,35 @@ class KertasKerjaController extends Controller
         $isSuperadmin = $user->hasRole('Superadmin');
         
         // Get User Role in this specific ST
-        $roleInTeam = \App\Models\StPersonel::where('st_id', $kertasKerja->st_id)
+        $roleInTeam = trim((string)\App\Models\StPersonel::where('st_id', $kertasKerja->st_id)
             ->where('user_id', $user->id)
-            ->value('role_dalam_tim');
+            ->value('role_dalam_tim'));
 
         $isCreator = $kertasKerja->user_id == $user->id;
         $isKetua = $roleInTeam == 'Ketua Tim';
 
         $canEdit = false;
+        $canEdit = false;
         if ($isSuperadmin) $canEdit = true;
-        elseif ($kertasKerja->status_approval == 'Draft' || str_starts_with($kertasKerja->status_approval, 'Revisi')) {
-            if ($isCreator) $canEdit = true;
-        }
-        elseif ($kertasKerja->status_approval == 'Review Ketua') {
-            if ($isCreator || $isKetua) $canEdit = true;
+        else {
+             // TIERED PERMISSION LOGIC
+             if ($kertasKerja->status_approval == 'Draft' || 
+                str_starts_with($kertasKerja->status_approval, 'Revisi') || 
+                $kertasKerja->status_approval == 'Review Ketua') {
+                if ($isCreator || $isKetua) $canEdit = true;
+            }
+            elseif ($kertasKerja->status_approval == 'Review Dalnis') {
+                $roleInTeam = \App\Models\StPersonel::where('st_id', $kertasKerja->st_id)
+                    ->where('user_id', $user->id)
+                    ->value('role_dalam_tim');
+                if ($roleInTeam == 'Dalnis') $canEdit = true;
+            }
+            elseif ($kertasKerja->status_approval == 'Review Korwas') {
+                $roleInTeam = \App\Models\StPersonel::where('st_id', $kertasKerja->st_id)
+                    ->where('user_id', $user->id)
+                    ->value('role_dalam_tim');
+                if ($roleInTeam == 'Korwas') $canEdit = true;
+            }
         }
 
         if (!$canEdit) {
@@ -422,22 +453,24 @@ class KertasKerjaController extends Controller
              if ($roleInTeam !== 'Ketua Tim' && !$isSuperadmin) {
                  return back()->with('error', 'Anda bukan Ketua Tim untuk penugasan ini.');
              }
-             $newStatus = 'Draft';
-             $notifyRoles = ['Anggota'];
-             $notifySpecificUser = $kk->user_id; // Original creator
-        } elseif ($kk->status_approval == 'Review Dalnis') {
-             if ($roleInTeam !== 'Dalnis' && !$isSuperadmin) {
-                 return back()->with('error', 'Anda bukan Dalnis untuk penugasan ini.');
-             }
-             $newStatus = 'Review Ketua';
-             $notifyRoles = ['Ketua Tim'];
-        } elseif ($kk->status_approval == 'Review Korwas') {
-             if ($roleInTeam !== 'Korwas' && !$isSuperadmin) {
-                 return back()->with('error', 'Anda bukan Korwas untuk penugasan ini.');
-             }
-             $newStatus = 'Review Dalnis';
-             $notifyRoles = ['Dalnis'];
-        } else {
+              $newStatus = 'Draft';
+              $notifyRoles = ['Anggota'];
+              $notifySpecificUser = $kk->user_id; // Original creator
+         } elseif ($kk->status_approval == 'Review Dalnis') {
+              if ($roleInTeam !== 'Dalnis' && !$isSuperadmin) {
+                  return back()->with('error', 'Anda bukan Dalnis untuk penugasan ini.');
+              }
+              // Dalnis rejects -> Back to Posisi Ketua
+              $newStatus = 'Review Ketua'; 
+              $notifyRoles = ['Ketua Tim'];
+         } elseif ($kk->status_approval == 'Review Korwas') {
+              if ($roleInTeam !== 'Korwas' && !$isSuperadmin) {
+                  return back()->with('error', 'Anda bukan Korwas untuk penugasan ini.');
+              }
+              // Korwas rejects -> Back to Posisi Ketua (Directly)
+              $newStatus = 'Review Ketua';
+              $notifyRoles = ['Ketua Tim', 'Dalnis']; // Notify both
+         } else {
             return back()->with('error', 'Status dokumen tidak valid untuk dikembalikan.');
         }
 
@@ -556,6 +589,104 @@ class KertasKerjaController extends Controller
         $kk->update(['nilai_akhir' => $finalScore]);
     }
 
+    /**
+     * Calculate level-based score for a parameter.
+     * Dispatches to building_block or criteria_fulfillment method.
+     */
+    private function calculateLevelScore(\App\Models\KertasKerja $kk, $indikatorId)
+    {
+        $metode = $kk->template->metode_penilaian ?? 'tally';
+
+        // Get criteria grouped by level
+        $criteriaByLevel = \App\Models\TemplateCriteria::where('indicator_id', $indikatorId)
+            ->orderBy('level')
+            ->get()
+            ->groupBy('level');
+
+        if ($criteriaByLevel->isEmpty()) return 0;
+
+        // Get answer with fresh details
+        $answer = \App\Models\KkAnswer::where('kertas_kerja_id', $kk->id)
+            ->where('indikator_id', $indikatorId)
+            ->with('details')
+            ->first();
+
+        if (!$answer) return 0;
+
+        if ($metode === 'building_block') {
+            return $this->scoreBuildingBlock($answer, $criteriaByLevel);
+        } else {
+            return $this->scoreCriteriaFulfillment($answer, $criteriaByLevel);
+        }
+    }
+
+    /**
+     * Building Block: Sequential level evaluation.
+     * Level N+1 is only evaluated if ALL criteria at Level N are 'full' (Ya).
+     * No 'Sebagian' option — only Ya/Tidak.
+     * Score = achievedLevel + fraction of next level (e.g., 3.21)
+     */
+    private function scoreBuildingBlock($answer, $criteriaByLevel)
+    {
+        $achievedLevel = 0;
+
+        foreach ($criteriaByLevel as $level => $criteria) {
+            $totalCriteria = $criteria->count();
+            $fulfilledCount = 0;
+
+            foreach ($criteria as $c) {
+                $detail = $answer->details->where('criteria_id', $c->id)->first();
+                if ($detail && $detail->answer_value === 'full') {
+                    $fulfilledCount++;
+                }
+            }
+
+            if ($fulfilledCount === $totalCriteria) {
+                // All criteria met → level achieved
+                $achievedLevel = $level;
+            } else {
+                // Partial → calculate fraction and STOP
+                $fraction = $totalCriteria > 0
+                    ? ($fulfilledCount / $totalCriteria)
+                    : 0;
+                return round($achievedLevel + $fraction, 2);
+            }
+        }
+
+        return round((float)$achievedLevel, 2); // All levels achieved
+    }
+
+    /**
+     * Criteria Fulfillment: Independent evaluation of all levels.
+     * Ya=1.0, Sebagian=0.5, Tidak=0.
+     * Each level contributes up to 1.0 to the score.
+     * Score = sum of (level_fulfillment) across all levels (max 5.00)
+     */
+    private function scoreCriteriaFulfillment($answer, $criteriaByLevel)
+    {
+        $totalScore = 0;
+
+        foreach ($criteriaByLevel as $level => $criteria) {
+            $totalCriteria = $criteria->count();
+            $scoreSum = 0;
+
+            foreach ($criteria as $c) {
+                $detail = $answer->details->where('criteria_id', $c->id)->first();
+                if ($detail) {
+                    if ($detail->answer_value === 'full') $scoreSum += 1.0;
+                    elseif ($detail->answer_value === 'partial') $scoreSum += 0.5;
+                }
+            }
+
+            $levelContribution = $totalCriteria > 0
+                ? ($scoreSum / $totalCriteria)
+                : 0;
+            $totalScore += $levelContribution;
+        }
+
+        return round($totalScore, 2);
+    }
+
     public function fetchReference(Request $request)
     {
         $request->validate([
@@ -595,7 +726,7 @@ class KertasKerjaController extends Controller
             'kk_id' => 'required|exists:kertas_kerja,id',
             'indicator_id' => 'required|exists:template_indicators,id',
             'criteria_id' => 'required|exists:template_criteria,id',
-            'value' => 'required|in:full,partial,none',
+            'value' => 'required|in:full,partial,none', // building_block only sends full/none
         ]);
 
         $kk = \App\Models\KertasKerja::findOrFail($request->kk_id);
@@ -615,13 +746,37 @@ class KertasKerjaController extends Controller
             ->where('user_id', $user->id)
             ->exists();
 
-        if ($isSuperadmin) $canEdit = true;
-        elseif ($isMemberOfTeam) {
-            if ($kk->status_approval == 'Draft' || str_starts_with($kk->status_approval, 'Revisi')) {
-                 $canEdit = true; // All assigned personnel can save in Draft
-            }
-            elseif ($kk->status_approval == 'Review Ketua') {
+        if ($isSuperadmin) {
+            $canEdit = true;
+        } elseif ($isRendal) {
+            $canEdit = false;
+        } elseif ($isMemberOfTeam) {
+            // TIERED PERMISSION LOGIC
+            // 1. Posisi Ketua Tim (Draft / Revisi / Review Ketua)
+            //    - Anggota (Creator) AND Ketua Tim can edit.
+            if ($kertasKerja->status_approval == 'Draft' || 
+                str_starts_with($kertasKerja->status_approval, 'Revisi') || 
+                $kertasKerja->status_approval == 'Review Ketua') {
+                
                 if ($isCreator || $isKetua) $canEdit = true;
+            }
+            // 2. Posisi Dalnis (Review Dalnis)
+            //    - Only Dalnis can edit.
+            elseif ($kertasKerja->status_approval == 'Review Dalnis') {
+                $roleInTeam = \App\Models\StPersonel::where('st_id', $kertasKerja->st_id)
+                    ->where('user_id', $user->id) 
+                    ->value('role_dalam_tim');
+                
+                if ($roleInTeam == 'Dalnis') $canEdit = true;
+            }
+            // 3. Posisi Korwas (Review Korwas)
+            //    - Only Korwas can edit.
+            elseif ($kertasKerja->status_approval == 'Review Korwas') {
+                $roleInTeam = \App\Models\StPersonel::where('st_id', $kertasKerja->st_id)
+                    ->where('user_id', $user->id) 
+                    ->value('role_dalam_tim');
+
+                if ($roleInTeam == 'Korwas') $canEdit = true;
             }
         }
 
@@ -681,23 +836,45 @@ class KertasKerjaController extends Controller
             $updateArr
         );
 
-        // 5. Recalculate Parameter Score
-        $totalCriteriaDb = \App\Models\TemplateCriteria::where('indicator_id', $indikatorId)->count();
-        $currentScoreSum = $answer->details()->sum('score'); // Query fresh sum
-        
+        // 5. Recalculate Parameter Score (branching by scoring method)
+        $metode = $kk->template->metode_penilaian ?? 'tally';
         $newParamScore = 0;
-        if ($totalCriteriaDb > 0) {
-            $newParamScore = ($currentScoreSum / $totalCriteriaDb) * 100;
+
+        if ($metode === 'tally') {
+            // Legacy: percentage tally
+            $totalCriteriaDb = \App\Models\TemplateCriteria::where('indicator_id', $indikatorId)->count();
+            $currentScoreSum = $answer->details()->sum('score');
+            if ($totalCriteriaDb > 0) {
+                $newParamScore = ($currentScoreSum / $totalCriteriaDb) * 100;
+            }
+        } else {
+            // Level-based scoring (building_block or criteria_fulfillment)
+            $newParamScore = $this->calculateLevelScore($kk, $indikatorId);
         }
+
         $answer->update(['nilai' => $newParamScore]);
 
         // 6. Recalculate Rollup
         $this->calculateMrRollup($kk);
 
+        // 7. Gather rollup scores for real-time UI update
+        $kk->refresh();
+        $rollupScores = \App\Models\KkAnswer::where('kertas_kerja_id', $kk->id)
+            ->where('catatan', 'Auto-calculated ROLLUP')
+            ->pluck('nilai', 'indikator_id');
+
+        // Format score display based on method
+        $paramScoreFormatted = $metode === 'tally'
+            ? number_format($newParamScore, 0)
+            : number_format($newParamScore, 2);
+
         return response()->json([
             'success' => true,
             'message' => 'Data tersimpan.',
-            'param_score' => number_format($newParamScore, 0),
+            'param_score' => $paramScoreFormatted,
+            'final_score' => number_format($kk->nilai_akhir ?? 0, 2),
+            'rollup_scores' => $rollupScores,
+            'metode' => $metode,
             'evidence_file' => $evidenceFileCriteria, 
             'is_local' => $evidenceFileCriteria ? \Storage::disk('public')->exists($evidenceFileCriteria) : false
         ]);
@@ -722,18 +899,24 @@ class KertasKerjaController extends Controller
         return view('kertas-kerja.review-sheet', compact('kk'));
     }
 
-    // QA Mode for Rendal
+    // QA Mode for Rendal & Team Response
     public function qa($id)
     {
         $kertasKerja = \App\Models\KertasKerja::findOrFail($id);
         $user = auth()->user();
 
-        if (!$user->hasRole('Rendal') && !$user->hasRole('Admin Perwakilan') && !$user->hasRole('Superadmin')) {
-            abort(403, 'Anda tidak memiliki akses QA.');
+        // Check Access: Rendal OR Team Member
+        $isRendal = $user->hasRole('Rendal') || $user->hasRole('Admin Perwakilan') || $user->hasRole('Superadmin');
+        
+        $isMemberOfTeam = \App\Models\StPersonel::where('st_id', $kertasKerja->st_id)
+            ->where('user_id', $user->id)
+            ->exists();
+
+        if (!$isRendal && !$isMemberOfTeam) {
+            abort(403, 'Anda tidak memiliki akses ke halaman QA ini.');
         }
 
         // Reuse the edit logic/view but pass a flag 'isQaMode'
-        // Need to replicate some logic from edit() to prep data
         $kertasKerja->load('template.indicators', 'answers.details');
 
         $indicators = \App\Models\TemplateIndicator::where('template_id', $kertasKerja->template_id)
@@ -747,10 +930,118 @@ class KertasKerjaController extends Controller
             ->get();
 
         $canEdit = false; // Regular edit disabled
-        $isQaMode = true; // Enable QA input fields
+        $isQaMode = true; // Enable QA View
 
-        return view('kertas-kerja.form', compact('kertasKerja', 'indicators', 'canEdit', 'isQaMode'));
+        $canEdit = false; // Regular edit disabled
+        $isQaMode = true; // Enable QA View
+        $isQaFinal = $kertasKerja->status_qa == 'Final';
+
+        // Determine permissions within QA Mode
+        // Rendal: Can Edit QA Score/Note IF NOT FINAL.
+        // Team: Can Edit Response IF NOT FINAL.
+        $canEditQa = $isRendal && !$isQaFinal; 
+        $canEditResponse = $isMemberOfTeam && !$isQaFinal; 
+
+            return view('kertas-kerja.form', compact('kertasKerja', 'indicators', 'canEdit', 'isQaMode', 'canEditQa', 'canEditResponse', 'isQaFinal'));
     }
+
+    public function finalizeQa(Request $request, $id)
+    {
+        \Log::info("Finalize QA Triggered for ID: $id by User: " . auth()->id());
+        $kk = \App\Models\KertasKerja::findOrFail($id);
+        $user = auth()->user();
+
+        // Only Rendal/Superadmin can finalize
+        if (!$user->hasRole('Rendal') && !$user->hasRole('Admin Perwakilan') && !$user->hasRole('Superadmin')) {
+            \Log::warning("Unauthorized Finalize Attempt by User: " . auth()->id() . " Role: " . ($user->role ? $user->role->name : 'None'));
+            abort(403, 'Hanya Rendal yang dapat memfinalisasi QA.');
+        }
+
+        \Log::info("Authorized Finalize access. User Role: " . ($user->role ? $user->role->name : 'None'));
+
+        $updated = $kk->update(['status_qa' => 'Final']);
+        \Log::info("QA Finalized Result: " . ($updated ? 'Success' : 'Failed') . ". New Status: " . $kk->fresh()->status_qa);
+
+            return redirect()->route('laporan.index')->with('success', 'Status QA berhasil difinalisasi.');
+    }
+
+    public function unfinalizeQa(Request $request, $id)
+    {
+        $kk = \App\Models\KertasKerja::findOrFail($id);
+        $user = auth()->user();
+
+        // Only Rendal/Superadmin can UN-finalize
+        if (!$user->hasRole('Rendal') && !$user->hasRole('Superadmin')) {
+             abort(403, 'Hanya Rendal/Superadmin yang dapat membatalkan finalisasi QA.');
+        }
+
+        $kk->update(['status_qa' => 'Draft']);
+        \Log::info("QA Unfinalized by User: " . auth()->id() . " for KK ID: " . $id);
+
+        return redirect()->route('laporan.index')->with('success', 'Status Final QA dibatalkan. Kembali ke Draft.');
+    }
+
+    public function unfinalizeApproval(Request $request, $id)
+    {
+        $kk = \App\Models\KertasKerja::findOrFail($id);
+        $user = auth()->user();
+
+        // Only Superadmin, Korwas, Dalnis can un-finalize approval
+        if (!$user->hasRole('Superadmin') && !$user->hasRole('Korwas') && !$user->hasRole('Dalnis')) {
+             abort(403, 'Akses ditolak. Hanya Korwas/Dalnis yang dapat membatalkan status final.');
+        }
+
+        // Set status to 'Review Korwas' (Back to Korwas Position)
+        // NOT Revisi, because Korwas wants to edit it or send it back manually.
+        $kk->update([
+            'status_approval' => 'Review Korwas',
+            'status_qa' => 'Draft' // Reset QA too if it was Final
+        ]);
+        
+        \Log::info("Approval Unfinalized (Revisi) by User: " . auth()->id() . " for KK ID: " . $id);
+
+        return redirect()->route('kertas-kerja.index')->with('success', 'Status Final dibatalkan. Dokumen dikembalikan ke Posisi Korwas.');
+    }
+
+    public function updateTanggapanQa(Request $request)
+    {
+        $kkId = $request->input('kk_id');
+        $user = auth()->user();
+        
+        // Prevent update if Final
+        $kk = \App\Models\KertasKerja::findOrFail($kkId);
+        if ($kk->status_qa == 'Final') {
+            return response()->json(['success' => false, 'message' => 'QA sudah final. Tidak dapat diubah.'], 403);
+        }
+
+        // Authorization: Rendal/Superadmin OR Team Member
+        $isRendal = $user->hasRole('Rendal') || $user->hasRole('Superadmin') || $user->hasRole('Admin Perwakilan');
+        $isMemberOfTeam = \App\Models\StPersonel::where('st_id', $kk->st_id)->where('user_id', $user->id)->exists();
+
+        if (!$isRendal && !$isMemberOfTeam) {
+            return response()->json(['success' => false, 'message' => 'Unauthorized access.'], 403);
+        }
+
+        $criteriaId = $request->input('criteria_id');
+        $tanggapan = $request->input('tanggapan_qa');
+
+        // Find existing answer/detail (must exist if QA is done, or at least structure exists)
+        $criteria = \App\Models\TemplateCriteria::findOrFail($criteriaId);
+        $answer = \App\Models\KkAnswer::firstOrCreate(
+            ['kertas_kerja_id' => $kkId, 'indikator_id' => $criteria->indicator_id]
+        );
+
+        $detail = \App\Models\KkAnswerDetail::firstOrCreate(
+            ['kk_answer_id' => $answer->id, 'criteria_id' => $criteriaId]
+        );
+
+        $detail->tanggapan_qa = $tanggapan;
+        $detail->save();
+
+        return response()->json(['success' => true, 'message' => 'Tanggapan tersimpan.']);
+    }
+
+
 
     public function storeQa(Request $request, $id)
     {

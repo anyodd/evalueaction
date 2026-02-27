@@ -59,4 +59,9 @@ class SuratTugas extends Model
     {
         return $this->hasMany(KertasKerja::class, 'st_id');
     }
+
+    public function programKerja()
+    {
+        return $this->hasMany(ProgramKerja::class, 'st_id');
+    }
 }

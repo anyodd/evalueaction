@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class KkTemplate extends Model
 {
     protected $table = 'kk_templates';
-    protected $fillable = ['jenis_penugasan_id', 'nama', 'tahun', 'is_active'];
+    protected $fillable = ['jenis_penugasan_id', 'nama', 'tahun', 'is_active', 'metode_penilaian'];
 
     public function jenisPenugasan()
     {

@@ -14,7 +14,7 @@ return [
     |
     */
 
-    'title' => 'e-Value-ActioN',
+    'title' => 'evalueaction',
     'title_prefix' => '',
     'title_postfix' => '',
 
@@ -25,12 +25,12 @@ return [
         'allowed' => true,
     ],
 
-    'logo' => '<span class="brand-e">e</span>-<span class="brand-value">Value</span>-<span class="brand-a">A</span><span class="brand-ctio">ctio</span><span class="brand-n">N</span>',
+    'logo' => '<span class="brand-e">e</span><span class="brand-value">value</span><span class="brand-a">a</span><span class="brand-ctio">ctio</span><span class="brand-n">n</span>',
     'logo_img' => 'img/logo.svg',
-    'logo_img_class' => 'brand-image elevation-3',
+    'logo_img_class' => 'brand-image',
     'logo_img_xl' => null,
     'logo_img_xl_class' => 'brand-image-xs',
-    'logo_img_alt' => 'e-Value-ActioN',
+    'logo_img_alt' => 'evalueaction',
 
     'auth_logo' => [
         'enabled' => false,
@@ -82,9 +82,9 @@ return [
     'classes_content_wrapper' => '',
     'classes_content_header' => '',
     'classes_content' => '',
-    'classes_sidebar' => 'sidebar-dark-navy elevation-4',
+    'classes_sidebar' => 'sidebar-light-navy elevation-4',
     'classes_sidebar_nav' => 'nav-flat',
-    'classes_topnav' => 'navbar-white navbar-light border-bottom-0',
+    'classes_topnav' => 'navbar-white navbar-light shadow-sm',
     'classes_topnav_nav' => 'navbar-expand',
     'classes_topnav_container' => 'container',
 
@@ -143,18 +143,26 @@ return [
             'text'        => 'Surat Tugas',
             'url'         => 'surat-tugas',
             'icon'        => 'fas fa-fw fa-file-alt',
-            // 'can'       => ['admin-perwakilan', 'superadmin'], // Adjusted later dynamically if needed
+            'can'         => ['superadmin', 'admin-perwakilan', 'korwas', 'dalnis', 'ketua-tim', 'anggota'],
+        ],
+        [
+            'text'        => 'Program Kerja',
+            'url'         => 'program-kerja',
+            'icon'        => 'fas fa-fw fa-tasks',
+            'can'         => ['superadmin', 'admin-perwakilan', 'korwas', 'dalnis', 'ketua-tim', 'anggota'],
         ],
         [
             'text'        => 'Kertas Kerja',
             'url'         => 'kertas-kerja',
             'icon'        => 'fas fa-fw fa-briefcase',
+            'can'         => ['superadmin', 'admin-perwakilan', 'korwas', 'dalnis', 'ketua-tim', 'anggota'],
         ],
+      
         [
-            'text'        => 'Pelaporan & QA',
+            'text'        => 'QA & Laporan',
             'url'         => 'laporan',
             'icon'        => 'fas fa-fw fa-chart-line',
-            'can'         => ['rendal', 'superadmin'],
+            'can'         => ['rendal', 'superadmin', 'admin-perwakilan', 'korwas', 'dalnis', 'ketua-tim', 'anggota'],
         ],
         ['header' => 'MANAJEMEN SYSTEM', 'can' => ['superadmin', 'admin-perwakilan']],
         [
@@ -183,6 +191,11 @@ return [
                     'url'  => 'templates',
                     'icon' => 'fas fa-fw fa-layer-group',
                 ],
+                [
+                    'text' => 'Template Program Kerja',
+                    'url'  => 'template-pka',
+                    'icon' => 'fas fa-fw fa-clipboard-list',
+                ],
             ],
         ],
         ['header' => 'PENGATURAN AKUN'],
@@ -190,11 +203,6 @@ return [
             'text' => 'Profile',
             'url'  => 'profile',
             'icon' => 'fas fa-fw fa-user',
-        ],
-        [
-            'text' => 'Change Password',
-            'url'  => 'password/reset',
-            'icon' => 'fas fa-fw fa-lock',
         ],
     ],
 
@@ -259,8 +267,18 @@ return [
             'files' => [
                 [
                     'type' => 'js',
+                    'asset' => false,
+                    'location' => '//cdn.jsdelivr.net/npm/sweetalert2@11',
+                ],
+            ],
+        ],
+        'GlobalSwal' => [
+            'active' => true,
+            'files' => [
+                [
+                    'type' => 'js',
                     'asset' => true,
-                    'location' => '//cdn.jsdelivr.net/npm/sweetalert2@8',
+                    'location' => 'js/global-swal.js',
                 ],
             ],
         ],

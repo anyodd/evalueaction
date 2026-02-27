@@ -27,6 +27,45 @@
 
 @section('content')
     <div class="container-fluid animate__animated animate__fadeInUp">
+        {{-- Real-time Score Dashboard Panel --}}
+        @php
+            $dashMetode = $kertasKerja->template->metode_penilaian ?? 'tally';
+            $dashIsLevel = in_array($dashMetode, ['building_block', 'criteria_fulfillment']);
+        @endphp
+        <div class="card shadow-sm border-0 mb-3" id="score-dashboard" style="border-radius: 12px; position: sticky; top: 57px; z-index: 100;" data-metode="{{ $dashMetode }}">
+            <div class="card-body py-2">
+                <div class="d-flex justify-content-between align-items-center flex-wrap">
+                    <div class="d-flex align-items-center flex-wrap">
+                        <small class="text-muted mr-2 font-weight-bold"><i class="fas fa-chart-bar mr-1"></i>Skor:</small>
+                        @foreach($indicators as $header)
+                            @php
+                                $aspectAnswer = $kertasKerja->answers->where('indikator_id', $header->id)->first();
+                                $aspectScore = $aspectAnswer ? $aspectAnswer->nilai : 0;
+                            @endphp
+                            <span class="badge badge-light border mr-2 p-2 mb-1" id="score-aspect-{{ $header->id }}">
+                                {{ \Illuminate\Support\Str::limit($header->uraian, 18) }}:
+                                <strong>{{ $dashIsLevel ? number_format((float)$aspectScore, 2) : number_format((float)$aspectScore, 1) . '%' }}</strong>
+                            </span>
+                        @endforeach
+                    </div>
+                    <div class="d-flex align-items-center">
+                        <span class="text-muted mr-2 font-weight-bold">Skor Akhir:</span>
+                        @php
+                            $finalScore = $kertasKerja->nilai_akhir ?? 0;
+                            if ($dashIsLevel) {
+                                $finalBadgeClass = $finalScore >= 4 ? 'badge-success' : ($finalScore >= 3 ? 'badge-primary' : ($finalScore >= 2 ? 'badge-warning' : 'badge-danger'));
+                            } else {
+                                $finalBadgeClass = $finalScore >= 80 ? 'badge-success' : ($finalScore >= 60 ? 'badge-primary' : ($finalScore >= 40 ? 'badge-warning' : 'badge-danger'));
+                            }
+                        @endphp
+                        <span class="badge {{ $finalBadgeClass }} p-2 px-3" id="score-final" style="font-size: 1.1em">
+                            {{ number_format((float)$finalScore, 2) }}{{ $dashIsLevel ? '' : '%' }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <form action="{{ route('kertas-kerja.update', $kertasKerja->id) }}" method="POST" enctype="multipart/form-data">
             @csrf
             @method('PUT')
@@ -76,6 +115,26 @@
                         <button type="submit" class="btn btn-primary rounded-pill px-5 shadow-sm">
                             <i class="fas fa-save mr-2"></i> Simpan Kertas Kerja
                         </button>
+                    @elseif(isset($isQaMode) && $isQaMode)
+                        <div class="d-flex justify-content-between align-items-center w-100">
+                            <div>
+                                @if(isset($isQaFinal) && $isQaFinal)
+                                    <div class="alert alert-success d-inline-block rounded-pill px-4 shadow-sm mb-0">
+                                        <i class="fas fa-check-circle mr-2"></i> QA Selesai (Final)
+                                    </div>
+                                @else
+                                    <div class="alert alert-warning d-inline-block rounded-pill px-4 shadow-sm mb-0">
+                                        <i class="fas fa-pen mr-2"></i> Mode QA (Draft)
+                                    </div>
+                                @endif
+                            </div>
+                            
+                            @if(isset($canEditQa) && $canEditQa && !$isQaFinal)
+                                <button type="button" class="btn btn-success rounded-pill px-5 shadow-sm btn-finalize-qa">
+                                    <i class="fas fa-check-double mr-2"></i> Finalkan QA
+                                </button>
+                            @endif
+                        </div>
                     @else
                         <div class="alert alert-info d-inline-block rounded-pill px-4 shadow-sm mb-0">
                             <i class="fas fa-info-circle mr-2"></i> Anda dalam mode **Read-Only**. Hubungi Ketua Tim atau Dalnis jika ada data yang perlu diubah.
@@ -85,6 +144,37 @@
             </div>
         </form>
     </div>
+
+    {{-- Hidden Form for Finalize QA --}}
+    <form id="form-finalize-qa" action="{{ route('kertas-kerja.finalize-qa', $kertasKerja->id) }}" method="POST" style="display: none;">
+        @csrf
+    </form>
+
+    @section('js')
+    <script>
+        $(document).ready(function() {
+            $('.btn-finalize-qa').click(function(e) {
+                e.preventDefault();
+                Swal.fire({
+                    title: 'Finalisasi QA?',
+                    text: "Apakah Anda yakin ingin memfinalisasi QA? Data tidak dapat diubah lagi setelah ini.",
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#28a745',
+                    cancelButtonColor: '#d33',
+                    confirmButtonText: 'Ya, Finalkan!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        document.getElementById('form-finalize-qa').submit();
+                    }
+                });
+            });
+        });
+    </script>
+    @endsection
+        @csrf
+    </form>
 @stop
 
 @section('css')
@@ -272,7 +362,63 @@
                     processData: false,
                     success: function(response) {
                         if(response.success) {
-                            toastr.success('Data tersimpan! Skor: ' + response.param_score + '%');
+                            let metode = response.metode || 'tally';
+                            let isLevel = (metode === 'building_block' || metode === 'criteria_fulfillment');
+                            let suffix = isLevel ? '' : '%';
+
+                            toastr.success('Skor: ' + response.param_score + suffix);
+
+                            // Update Parameter Score Badge
+                            let badge = $('#score-param-' + indicatorId);
+                            if (badge.length) {
+                                if (isLevel) {
+                                    let lvl = Math.floor(parseFloat(response.param_score));
+                                    badge.html('Skor: <strong>' + response.param_score + '</strong> (Level ' + lvl + ')');
+                                } else {
+                                    badge.html('Skor Parameter: ' + response.param_score + '%');
+                                }
+                                badge.addClass('animate__animated animate__pulse');
+                                setTimeout(() => badge.removeClass('animate__animated animate__pulse'), 1000);
+                            }
+
+                            // Update Rollup Scores (Indicator/Aspect levels)
+                            if (response.rollup_scores) {
+                                $.each(response.rollup_scores, function(indId, score) {
+                                    let el = $('#score-aspect-' + indId);
+                                    if (el.length) {
+                                        if (isLevel) {
+                                            el.find('strong').text(parseFloat(score).toFixed(2));
+                                        } else {
+                                            el.find('strong').text(parseFloat(score).toFixed(1) + '%');
+                                        }
+                                        el.addClass('animate__animated animate__pulse');
+                                        setTimeout(() => el.removeClass('animate__animated animate__pulse'), 1000);
+                                    }
+                                });
+                            }
+
+                            // Update Final Score
+                            if (response.final_score) {
+                                let finalBadge = $('#score-final');
+                                finalBadge.text(response.final_score + suffix);
+                                finalBadge.addClass('animate__animated animate__heartBeat');
+                                setTimeout(() => finalBadge.removeClass('animate__animated animate__heartBeat'), 1500);
+
+                                // Color-code based on score value and method
+                                let score = parseFloat(response.final_score);
+                                finalBadge.removeClass('badge-primary badge-success badge-warning badge-danger');
+                                if (isLevel) {
+                                    if (score >= 4) finalBadge.addClass('badge-success');
+                                    else if (score >= 3) finalBadge.addClass('badge-primary');
+                                    else if (score >= 2) finalBadge.addClass('badge-warning');
+                                    else finalBadge.addClass('badge-danger');
+                                } else {
+                                    if (score >= 80) finalBadge.addClass('badge-success');
+                                    else if (score >= 60) finalBadge.addClass('badge-primary');
+                                    else if (score >= 40) finalBadge.addClass('badge-warning');
+                                    else finalBadge.addClass('badge-danger');
+                                }
+                            }
                         } else {
                             toastr.error(response.message || 'Gagal menyimpan.');
                         }
@@ -297,6 +443,61 @@
                     }
                 });
             });
+            // Save Tanggapan QA
+            $(document).on('click', '.btn-save-tanggapan', function() {
+                let btn = $(this);
+                let criteriaId = btn.data('criteria');
+                let kkId = btn.data('kk');
+                
+                let tanggapanName = `qa[${criteriaId}][tanggapan_qa]`;
+                let tanggapan = $(`textarea[name="${tanggapanName}"]`).val();
+
+                if (!tanggapan) {
+                    toastr.warning('Isi tanggapan terlebih dahulu.');
+                    return;
+                }
+
+                // Prepare FormData
+                let formData = new FormData();
+                let csrfToken = $('meta[name="csrf-token"]').attr('content');
+                
+                if (!csrfToken) {
+                    toastr.error('CSRF Token missing. Silakan refresh halaman.');
+                    return;
+                }
+
+                formData.append('_token', csrfToken);
+                formData.append('kk_id', kkId);
+                formData.append('criteria_id', criteriaId);
+                formData.append('tanggapan_qa', tanggapan);
+
+                // UI Loading
+                let originalText = btn.html();
+                btn.html('<i class="fas fa-spinner fa-spin"></i>').prop('disabled', true);
+
+                $.ajax({
+                    url: "{{ route('kertas-kerja.update-tanggapan-qa') }}",
+                    type: "POST",
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        if(response.success) {
+                            toastr.success(response.message);
+                        } else {
+                            toastr.error(response.message);
+                        }
+                    },
+                    error: function(xhr) {
+                        toastr.error('Gagal menyimpan tanggapan.');
+                        console.error(xhr);
+                    },
+                    complete: function() {
+                        btn.html(originalText).prop('disabled', false);
+                    }
+                });
+            });
+
         });
     </script>
 @stop

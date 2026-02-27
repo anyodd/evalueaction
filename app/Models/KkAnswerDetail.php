@@ -10,9 +10,9 @@ class KkAnswerDetail extends Model
     use HasFactory;
 
     protected $table = 'kk_answer_details';
-    protected $fillable = ['kk_answer_id', 'criteria_id', 'answer_value', 'score', 'catatan', 'evidence_file', 'evidence_link', 'score_qa', 'catatan_qa', 'qa_value'];
-
-    public function answer()
+    protected $fillable = ['kk_answer_id', 'criteria_id', 'answer_value', 'score', 'catatan', 'evidence_file', 'evidence_link', 'score_qa', 'catatan_qa',        'qa_value',
+        'tanggapan_qa',
+    ];  public function answer()
     {
         return $this->belongsTo(KkAnswer::class, 'kk_answer_id');
     }

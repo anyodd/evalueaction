@@ -23,4 +23,9 @@ class Perwakilan extends Model
     {
         return $this->hasMany(User::class);
     }
+
+    public function suratTugas()
+    {
+        return $this->hasMany(SuratTugas::class, 'perwakilan_id');
+    }
 }

@@ -35,6 +35,16 @@
                 </div>
 
                 <div class="form-group">
+                    <label>Metode Penilaian</label>
+                    <select name="metode_penilaian" class="form-control @error('metode_penilaian') is-invalid @enderror">
+                        <option value="tally">Tally — Ya/Sebagian/Tidak → Persentase (%)</option>
+                        <option value="building_block">Building Block — Level 1-5 sekuensial (Ya/Tidak)</option>
+                        <option value="criteria_fulfillment">Pemenuhan Kriteria — Level 1-5 independen (Ya/Sebagian/Tidak)</option>
+                    </select>
+                    <small class="form-text text-muted">Pilih metode scoring yang digunakan template ini.</small>
+                </div>
+
+                <div class="form-group">
                     <div class="custom-control custom-switch">
                         <input type="checkbox" class="custom-control-input" id="is_active" name="is_active" value="1" checked>
                         <label class="custom-control-label" for="is_active">Aktif (Dapat digunakan di Surat Tugas)</label>

@@ -2,6 +2,7 @@
 
 @section('adminlte_css_pre')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/icheck-bootstrap/3.0.1/icheck-bootstrap.min.css">
+    <link rel="stylesheet" href="{{ asset('css/custom.css') }}">
     <style>
         .login-page {
             background: #ffffff !important;
@@ -86,9 +87,9 @@
         <div class="shape shape-3"></div>
         <div class="shape shape-4"></div>
     </div>
-    <p class="login-box-msg mb-1">
-        <b>e-Value-<span class="text-red-brand">A</span><span class="text-turquoise-brand">ctio</span><span class="text-orange-brand">N</span></b>
-    </p>
+    <div class="login-box-msg mb-1" style="font-size: 2rem;">
+        <span class="brand-e">e</span><span class="brand-value">value</span><span class="brand-a">a</span><span class="brand-ctio">ctio</span><span class="brand-n">n</span>
+    </div>
     <p class="login-box-msg pb-2">Silakan Masuk untuk Memulai Sesi</p>
 @stop
 
@@ -153,7 +154,7 @@
         <i>"Deputi Akuntan Negara memberikan nilai tambah melalui kegiatan monitoring dan evaluasi"</i>
     </p>
     <p class="my-0">
-        <a href="https://wa.me/6281247981945?text=Assalamualaikum,%20mohon%20bantuan%20reset%20password%20untuk%20aplikasi%20e-Value-ActioN." target="_blank" class="text-center">
+        <a href="https://wa.me/6281247981945?text=Assalamualaikum,%20mohon%20bantuan%20reset%20password%20untuk%20aplikasi%20evalueaction." target="_blank" class="text-center">
             <i class="fab fa-whatsapp mr-1"></i> Lupa Kata Sandi? Hubungi Admin
         </a>
     </p>
