@@ -88,7 +88,7 @@ flowchart LR
     KK_Review -->|Revisi/Tanggapan| KK
     KK_Review -->|Approval Final| QA
     
-    QA -->|Review QA| QA
+    QA -->|Review QA - Bersama Tim Perwakilan| QA
     QA -->|QA Selesai & Laporan Terbit| Laporan
     Laporan -->|Administrasi Laporan| Selesai
     
@@ -186,6 +186,17 @@ flowchart LR
         }
         .mermaid {
             cursor: pointer;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            overflow: visible;
+        }
+        .mermaid svg {
+            /* Memaksa SVG agar merentang semaksimal mungkin */
+            width: 100% !important;
+            max-width: 1200px !important;
+            height: auto !important;
+            min-height: 450px !important;
         }
     </style>
 @stop
