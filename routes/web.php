@@ -98,4 +98,7 @@ Route::group(['middleware' => ['auth']], function () {
         $notification->markAsRead();
         return redirect($notification->data['url'] ?? route('home'));
     })->name('notifications.read');
+    // Tutorial / Panduan
+    Route::get('tutorial', [App\Http\Controllers\TutorialController::class, 'index'])->name('tutorial.index');
+
 });

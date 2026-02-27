@@ -204,6 +204,12 @@ return [
             'url'  => 'profile',
             'icon' => 'fas fa-fw fa-user',
         ],
+        ['header' => 'PANDUAN PENGGUNA'],
+        [
+            'text' => 'Tutorial Aplikasi',
+            'url'  => 'tutorial',
+            'icon' => 'fas fa-fw fa-book-open',
+        ],
     ],
 
     'filters' => [
