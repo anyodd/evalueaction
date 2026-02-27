@@ -48,7 +48,7 @@
                         <!-- Mermaid JS Definition -->
                         <pre class="mermaid mx-auto text-left" style="min-width: 600px; background: transparent; border: none; padding: 0;">
 %%{init: {'theme': 'base', 'themeVariables': { 'primaryColor': '#ffffff', 'primaryTextColor': '#333333', 'primaryBorderColor': '#17a2b8', 'lineColor': '#6c757d', 'secondaryColor': '#f4f6f9', 'tertiaryColor': '#e9ecef'}}}%%
-flowchart LR
+graph LR
     classDef startEnd fill:#28a745,stroke:#218838,stroke-width:2px,color:#fff,rx:10px,ry:10px;
     classDef process fill:#fff,stroke:#17a2b8,stroke-width:2px,color:#333,rx:5px,ry:5px;
     classDef database fill:#f8f9fa,stroke:#6c757d,stroke-width:2px,color:#333;
@@ -160,7 +160,7 @@ flowchart LR
                     <div class="info-box-content">
                         <span class="info-box-text font-weight-bold">4. QA & Laporan</span>
                         <span class="info-box-number font-weight-normal text-muted" style="font-size: 0.9em; white-space: normal;">
-                            Tim Rendal melakukan proses Quality Assurance (QA). Setelah QA selesai, laporan diterbitkan oleh Perwakilan dan diunggah ke aplikasi untuk dikompilasi.
+                        Tim Rendal melakukan proses Quality Assurance (QA). Setelah QA selesai, laporan diterbitkan oleh Perwakilan dan diunggah ke aplikasi untuk dikompilasi.
                         </span>
                     </div>
                 </div>
@@ -190,13 +190,6 @@ flowchart LR
             display: flex;
             justify-content: center;
             overflow: visible;
-        }
-        .mermaid svg {
-            /* Memaksa SVG agar merentang semaksimal mungkin */
-            width: 100% !important;
-            max-width: 1200px !important;
-            height: auto !important;
-            min-height: 450px !important;
         }
     </style>
 @stop
