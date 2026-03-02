@@ -80,7 +80,7 @@
                                     <div id="collapse-{{ $prov->id }}" class="collapse {{ $loop->first ? 'show' : '' }}" data-parent="#accordionMonitoring">
                                         <div class="card-body p-0">
                                             <div class="table-responsive">
-                                                <table class="table table-striped table-hover m-0">
+                                                <table class="table table-striped table-hover table-stack m-0">
                                                     <thead class="bg-white">
                                                         <tr class="text-xs text-uppercase text-muted">
                                                             <th>ST & Objek</th>
@@ -94,32 +94,32 @@
                                                     <tbody>
                                                         @foreach($prov->suratTugas as $st)
                                                             <tr>
-                                                                <td>
+                                                                <td data-label="ST & Objek">
                                                                     <strong>{{ $st->nomor_st }}</strong><br>
                                                                     <span class="text-muted small">{{ $st->nama_objek }}</span>
                                                                 </td>
-                                                                <td><span class="badge badge-{{ $st->badge_fase }} px-2 py-1">{{ $st->fase_sekarang }}</span></td>
-                                                                <td class="align-middle">
+                                                                <td data-label="Fase Dominan"><span class="badge badge-{{ $st->badge_fase }} px-2 py-1">{{ $st->fase_sekarang }}</span></td>
+                                                                <td data-label="Progress PKA" class="align-middle">
                                                                     <div class="progress progress-sm mb-1" style="height: 6px;">
                                                                         <div class="progress-bar bg-{{ $st->progress_pka == 100 ? 'success' : 'info' }}" style="width: {{ $st->progress_pka }}%"></div>
                                                                     </div>
                                                                     <small class="font-weight-bold text-muted">{{ number_format($st->progress_pka, 1) }}%</small>
                                                                 </td>
-                                                                <td>
+                                                                <td data-label="Status KK">
                                                                     @if(str_contains($st->status_kk, 'Final'))
                                                                         <span class="text-success font-weight-bold"><i class="fas fa-check-circle mr-1"></i> {{ $st->status_kk }}</span>
                                                                     @else
                                                                         <span class="text-secondary">{{ $st->status_kk }}</span>
                                                                     @endif
                                                                 </td>
-                                                                <td>
+                                                                <td data-label="Laporan (QA)">
                                                                     @if(str_contains($st->status_laporan, 'Tersedia'))
                                                                         <span class="badge badge-success"><i class="fas fa-file-pdf mr-1"></i> {{ $st->status_laporan }}</span>
                                                                     @else
                                                                         <span class="badge badge-light border">{{ $st->status_laporan }}</span>
                                                                     @endif
                                                                 </td>
-                                                                <td>
+                                                                <td data-label="Aksi">
                                                                     <button class="btn btn-xs btn-outline-info btn-gantt rounded-pill px-3" 
                                                                         data-st-id="{{ $st->id }}" 
                                                                         data-st-nomor="{{ $st->nomor_st }}"

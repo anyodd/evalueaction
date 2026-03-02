@@ -16,7 +16,7 @@
                 <!-- /.card-header -->
                 <div class="card-body">
                     <p>Halaman ini menampilkan Kertas Kerja yang sudah disetujui Korwas dan menunggu QA akhir Rendal.</p>
-                     <table class="table table-bordered table-striped">
+                     <table class="table table-bordered table-striped table-stack">
                         <thead>
                             <tr>
                                 <th width="50">No</th>
@@ -30,13 +30,13 @@
                         <tbody>
                             @forelse($reports as $report)
                                 <tr>
-                                    <td>{{ $loop->iteration }}</td>
-                                    <td>
+                                    <td data-label="No">{{ $loop->iteration }}</td>
+                                    <td data-label="Perwakilan / Objek">
                                         <span class="font-weight-bold d-block text-dark">{{ optional(optional($report->suratTugas)->perwakilan)->nama_perwakilan ?? 'N/A' }}</span>
                                         <div class="small text-muted mb-1">{{ optional($report->suratTugas)->nama_objek ?? '-' }}</div>
                                         <span class="badge badge-light border">{{ optional($report->suratTugas)->nomor_st ?? '-' }}</span>
                                     </td>
-                                    <td>
+                                    <td data-label="Nilai Akh / QA">
                                         <div class="d-flex justify-content-between align-items-center border-bottom pb-1 mb-1">
                                             <span class="text-muted small">Tim:</span> 
                                             <span class="font-weight-bold">{{ number_format($report->nilai_akhir, 2) }}</span>
@@ -48,7 +48,7 @@
                                             </div>
                                         @endif
                                     </td>
-                                    <td class="text-center align-middle">
+                                    <td data-label="QA Status" class="text-center align-middle">
                                         @if($report->status_qa == 'Final')
                                             <span class="badge badge-success px-3 py-2 rounded-pill shadow-sm">FINAL</span>
                                             @if(auth()->user()->hasRole('Rendal') || auth()->user()->hasRole('Superadmin'))
@@ -68,7 +68,7 @@
                                             <span class="badge badge-warning px-3 py-2 rounded-pill shadow-sm">DRAFT</span>
                                         @endif
                                     </td>
-                                    <td class="align-middle">
+                                    <td data-label="Laporan & Lampiran" class="align-middle">
                                         {{-- Only show if Final --}}
                                         @if($report->status_qa == 'Final')
                                             {{-- File Laporan Section --}}
@@ -122,7 +122,7 @@
                                             </div>
                                         @endif
                                     </td>
-                                    <td class="text-center align-middle">
+                                    <td data-label="Aksi / QA" class="text-center align-middle">
                                         @if(auth()->user()->hasRole('Rendal') || auth()->user()->hasRole('Admin Perwakilan'))
                                             <a href="{{ route('kertas-kerja.qa', $report->id) }}" class="btn btn-navy btn-sm rounded-pill mb-1 btn-block" title="Lakukan QA">
                                                 <i class="fas fa-check-double mr-1"></i> Mode QA

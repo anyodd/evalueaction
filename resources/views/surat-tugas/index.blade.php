@@ -26,7 +26,7 @@
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle m-0">
+                    <table class="table table-hover align-middle m-0 table-stack">
                         <thead class="bg-light">
                             <tr>
                                 <th class="pl-4">No. ST / Tanggal</th>
@@ -39,21 +39,21 @@
                         <tbody>
                             @forelse($suratTugas as $st)
                                 <tr>
-                                    <td class="pl-4">
+                                    <td data-label="No. ST / Tanggal" class="pl-4">
                                         <span class="font-weight-bold text-navy d-block">{{ $st->nomor_st }}</span>
                                         <small class="text-muted"><i class="far fa-calendar-alt mr-1"></i> {{ \Carbon\Carbon::parse($st->tgl_st)->format('d M Y') }}</small>
                                     </td>
-                                    <td>
+                                    <td data-label="Objek Evaluasi">
                                         <span class="d-block font-weight-bold">{{ $st->nama_objek }}</span>
                                         <small class="text-muted badge bg-light border"><i class="fas fa-map-marker-alt mr-1"></i> {{ $st->perwakilan->nama_perwakilan ?? '-' }}</small>
                                     </td>
-                                    <td><span class="badge border border-info text-info px-2 py-1">{{ $st->tahun_evaluasi }}</span></td>
-                                    <td>
+                                    <td data-label="Tahun"><span class="badge border border-info text-info px-2 py-1">{{ $st->tahun_evaluasi }}</span></td>
+                                    <td data-label="Personel">
                                         <div class="avatar-group d-flex align-items-center">
                                             <span class="badge bg-navy rounded-pill px-2 shadow-sm">{{ $st->personel()->count() }} Personel</span>
                                         </div>
                                     </td>
-                                    <td class="text-right pr-4">
+                                    <td data-label="Aksi" class="text-right pr-4">
                                         <div class="btn-group shadow-sm" style="border-radius: 8px; overflow: hidden;">
                                             <a href="{{ route('surat-tugas.print', $st->id) }}" target="_blank" class="btn btn-default btn-xs shadow-none" title="Cetak"><i class="fas fa-print"></i></a>
                                             <a href="{{ route('surat-tugas.edit', $st->id) }}" class="btn btn-warning btn-xs shadow-none text-white" title="Edit"><i class="fas fa-edit"></i></a>

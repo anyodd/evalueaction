@@ -60,7 +60,7 @@
                 <div class="alert alert-danger alert-dismissible fade show"><button type="button" class="close" data-dismiss="alert"><span>&times;</span></button>{{ session('error') }}</div>
             @endif
 
-            <table class="table table-hover">
+            <table class="table table-hover table-stack">
                 <thead class="bg-light">
                     <tr>
                         <th>Judul Template</th>
@@ -73,21 +73,21 @@
                 <tbody>
                     @forelse($templates as $tpl)
                         <tr>
-                            <td class="font-weight-bold">{{ $tpl->judul }}</td>
-                            <td class="text-center">
+                            <td data-label="Judul Template" class="font-weight-bold">{{ $tpl->judul }}</td>
+                            <td data-label="Langkah" class="text-center">
                                 <span class="badge badge-light border p-2">
                                     <i class="fas fa-list-ol mr-1"></i>{{ $tpl->langkah_count }} langkah
                                 </span>
                             </td>
-                            <td>{{ $tpl->creator->name ?? '-' }}</td>
-                            <td>
+                            <td data-label="Dibuat Oleh">{{ $tpl->creator->name ?? '-' }}</td>
+                            <td data-label="Status">
                                 @if($tpl->status === 'published')
                                     <span class="badge badge-success"><i class="fas fa-globe mr-1"></i>Published</span>
                                 @else
                                     <span class="badge badge-secondary">Draft</span>
                                 @endif
                             </td>
-                            <td>
+                            <td data-label="Aksi">
                                 <div class="btn-action-group">
                                     <a href="{{ route('template-pka.show', $tpl->id) }}" class="btn btn-action btn-action-builder" title="Builder Langkah">
                                         <i class="fas fa-tools mr-1"></i> Builder

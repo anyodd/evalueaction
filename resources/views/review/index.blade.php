@@ -13,7 +13,7 @@
         </div>
         <div class="card-body">
             <p class="text-muted">Daftar Kertas Kerja yang perlu direview oleh Anda.</p>
-            <table class="table table-bordered table-striped">
+            <table class="table table-bordered table-striped table-stack">
                 <thead>
                     <tr>
                         <th>Prioritas</th>
@@ -26,7 +26,7 @@
                 </thead>
                 <tbody>
                      <tr>
-                        <td colspan="6" class="text-center">Tidak ada item yang perlu direview</td>
+                        <td colspan="6" data-label="Info" class="text-center">Tidak ada item yang perlu direview</td>
                     </tr>
                 </tbody>
             </table>

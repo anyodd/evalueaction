@@ -35,7 +35,7 @@
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle m-0">
+                    <table class="table table-hover align-middle m-0 table-stack">
                         <thead class="bg-light">
                             <tr>
                                 <th class="pl-4">Profil</th>
@@ -48,24 +48,24 @@
                         <tbody>
                             @forelse($users as $user)
                                 <tr>
-                                    <td class="pl-4">
+                                    <td data-label="Profil" class="pl-4">
                                         <div class="d-flex align-items-center">
                                             <div class="bg-navy rounded-circle d-flex align-items-center justify-content-center mr-3 shadow-sm" style="width: 40px; height: 40px;">
                                                 <i class="fas fa-user text-white"></i>
                                             </div>
-                                            <div>
+                                            <div class="text-left">
                                                 <span class="font-weight-bold text-navy d-block">{{ $user->name }}</span>
                                                 <small class="text-muted">ID: #{{ $user->id }}</small>
                                             </div>
                                         </div>
                                     </td>
-                                    <td>
+                                    <td data-label="Email / NIP">
                                         <span class="d-block">{{ $user->email }}</span>
                                         <small class="text-muted font-italic">{{ $user->nip ?? 'NIP Belum Diisi' }}</small>
                                     </td>
-                                    <td><span class="badge border border-navy text-navy px-2 py-1">{{ $user->role->name ?? '-' }}</span></td>
-                                    <td><span class="text-muted">{{ $user->perwakilan->nama_perwakilan ?? 'Pusat' }}</span></td>
-                                    <td class="text-right pr-4">
+                                    <td data-label="Role"><span class="badge border border-navy text-navy px-2 py-1">{{ $user->role->name ?? '-' }}</span></td>
+                                    <td data-label="Perwakilan"><span class="text-muted">{{ $user->perwakilan->nama_perwakilan ?? 'Pusat' }}</span></td>
+                                    <td data-label="Aksi" class="text-right pr-4">
                                         <div class="btn-group shadow-sm" style="border-radius: 8px; overflow: hidden;">
                                             <a href="{{ route('users.edit', $user->id) }}" class="btn btn-warning btn-xs shadow-none" title="Edit"><i class="fas fa-edit"></i></a>
                                             <form action="{{ route('users.destroy', $user->id) }}" method="POST" class="d-inline">

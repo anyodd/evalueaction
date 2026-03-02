@@ -292,3 +292,96 @@ body {
 .nav-link:active {
     transform: scale(0.98);
 }
+
+/* Responsive Mobile Enhancements */
+
+/* 1. Stacked Table for Mobile */
+@media screen and (max-width: 768px) {
+    .table-stack thead {
+        display: none;
+    }
+    
+    .table-stack tr {
+        display: block;
+        margin-bottom: 1.5rem;
+        border: 1px solid #e2e8f0;
+        padding: 0.5rem;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        overflow: hidden;
+    }
+    
+    .table-stack td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        text-align: right;
+        padding: 0.75rem 1rem !important;
+        border-top: 1px solid #f1f5f9 !important;
+    }
+    
+    .table-stack td::before {
+        content: attr(data-label);
+        font-weight: 700;
+        text-transform: uppercase;
+        font-size: 0.7rem;
+        color: #64748b;
+        text-align: left;
+        margin-right: 1rem;
+        flex: 1;
+    }
+
+    .table-stack td:last-child {
+        border-bottom: 0;
+        flex-direction: column;
+        align-items: flex-start;
+    }
+
+    .table-stack td:last-child::before {
+        margin-bottom: 0.5rem;
+    }
+
+    /* Action Buttons in Stacked Table */
+    .btn-action-group {
+        width: 100%;
+        justify-content: flex-start !important;
+        flex-wrap: wrap;
+        gap: 10px !important;
+    }
+
+    .btn-action {
+        width: 40px !important;
+        height: 40px !important;
+    }
+}
+
+/* 2. Content Header Adjustments for Mobile */
+@media screen and (max-width: 576px) {
+    .content-header h1 {
+        font-size: 1.5rem !important;
+        margin-bottom: 0.5rem;
+    }
+    
+    .content-header .d-flex {
+        flex-direction: column;
+        align-items: flex-start !important;
+    }
+    
+    .content-header .btn {
+        width: 100%;
+        margin-top: 0.5rem;
+    }
+    
+    .card-body {
+        padding: 0.75rem !important;
+    }
+}
+
+/* 3. Better Badges on Mobile */
+@media screen and (max-width: 768px) {
+    .badge {
+        padding: 0.5em 0.8em;
+        font-size: 90%;
+    }
+}

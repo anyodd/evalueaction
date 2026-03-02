@@ -42,7 +42,7 @@
                         @endif
 
                         <div class="table-responsive">
-                            <table class="table table-hover table-striped" id="kk-table">
+                            <table class="table table-hover table-striped table-stack" id="kk-table">
                                 <thead class="bg-navy text-white">
                                     <tr>
                                         <th>No</th>
@@ -59,20 +59,20 @@
                                             $kk = $st->kertasKerja->first(); // KK milik user ini
                                         @endphp
                                         <tr>
-                                            <td>{{ $loop->iteration }}</td>
-                                            <td>
+                                            <td data-label="No">{{ $loop->iteration }}</td>
+                                            <td data-label="Nomor ST">
                                                 <span class="font-weight-bold d-block">{{ $st->nomor_st }}</span>
                                                 <small class="text-muted"><i class="far fa-calendar-alt mr-1"></i> {{ \Carbon\Carbon::parse($st->tgl_st)->format('d M Y') }}</small>
                                             </td>
-                                            <td>{{ $st->nama_objek }}</td>
-                                            <td>
+                                            <td data-label="Judul Penugasan">{{ $st->nama_objek }}</td>
+                                            <td data-label="Jenis Penugasan">
                                                 @if($st->jenisPenugasan)
                                                     <span class="badge badge-info">{{ $st->jenisPenugasan->nama }}</span>
                                                 @else
                                                     <span class="badge badge-secondary">-</span>
                                                 @endif
                                             </td>
-                                            <td>
+                                            <td data-label="Status KK">
                                                 @if($kk)
                                                     @if($kk->status_approval == 'Draft')
                                                         <span class="badge badge-warning">Draft</span>
@@ -83,7 +83,7 @@
                                                     <span class="badge badge-secondary">Belum Dibuat</span>
                                                 @endif
                                             </td>
-                                            <td class="text-center">
+                                            <td data-label="Aksi" class="text-center">
                                                 @if($st->template_id)
                                                     @if($kk)
                                                         @php

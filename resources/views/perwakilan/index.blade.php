@@ -26,7 +26,7 @@
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle m-0">
+                    <table class="table table-hover align-middle m-0 table-stack">
                         <thead class="bg-light">
                             <tr>
                                 <th class="pl-4">Kode Wilayah</th>
@@ -37,9 +37,9 @@
                         <tbody>
                             @forelse($perwakilan as $p)
                                 <tr>
-                                    <td class="pl-4 font-weight-bold text-navy">{{ $p->kode_wilayah }}</td>
-                                    <td>{{ $p->nama_perwakilan }}</td>
-                                    <td class="text-right pr-4">
+                                    <td data-label="Kode Wilayah" class="pl-4 font-weight-bold text-navy">{{ $p->kode_wilayah }}</td>
+                                    <td data-label="Nama Perwakilan">{{ $p->nama_perwakilan }}</td>
+                                    <td data-label="Aksi" class="text-right pr-4">
                                         <div class="btn-group shadow-sm" style="border-radius: 8px; overflow: hidden;">
                                             <a href="{{ route('perwakilan.edit', $p->id) }}" class="btn btn-warning btn-xs shadow-none" title="Edit"><i class="fas fa-edit"></i></a>
                                             <form action="{{ route('perwakilan.destroy', $p->id) }}" method="POST" class="d-inline">

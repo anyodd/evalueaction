@@ -35,7 +35,7 @@
             </div>
             <div class="card-body p-0">
                 <div class="table-responsive">
-                    <table class="table table-hover align-middle m-0">
+                    <table class="table table-hover align-middle m-0 table-stack">
                         <thead class="bg-light">
                             <tr>
                                 <th class="pl-4">ID</th>
@@ -47,10 +47,10 @@
                         <tbody>
                             @forelse($roles as $role)
                                 <tr>
-                                    <td class="pl-4 font-weight-bold text-navy">#{{ $role->id }}</td>
-                                    <td><span class="badge bg-navy px-3 py-2 rounded-pill shadow-sm">{{ $role->name }}</span></td>
-                                    <td>{{ $role->users()->count() }} User</td>
-                                    <td class="text-right pr-4">
+                                    <td data-label="ID" class="pl-4 font-weight-bold text-navy">#{{ $role->id }}</td>
+                                    <td data-label="Nama Role"><span class="badge bg-navy px-3 py-2 rounded-pill shadow-sm">{{ $role->name }}</span></td>
+                                    <td data-label="Jumlah User">{{ $role->users()->count() }} User</td>
+                                    <td data-label="Aksi" class="text-right pr-4">
                                         <div class="btn-group shadow-sm" style="border-radius: 8px; overflow: hidden;">
                                             <a href="{{ route('roles.edit', $role->id) }}" class="btn btn-warning btn-xs shadow-none" title="Edit"><i class="fas fa-edit"></i></a>
                                             <form action="{{ route('roles.destroy', $role->id) }}" method="POST" class="d-inline">

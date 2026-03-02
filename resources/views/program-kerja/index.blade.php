@@ -33,7 +33,7 @@
 
         <div class="card shadow-sm border-0" style="border-radius: 15px;">
             <div class="card-body">
-                <table id="pka-table" class="table table-hover table-striped w-100">
+                <table id="pka-table" class="table table-hover table-striped table-stack w-100">
                     <thead class="bg-light">
                         <tr>
                             <th width="5%">#</th>
@@ -48,8 +48,8 @@
                     <tbody>
                         @forelse($programKerja as $index => $pka)
                             <tr>
-                                <td>{{ $index + 1 }}</td>
-                                <td>
+                                <td data-label="#">{{ $index + 1 }}</td>
+                                <td data-label="Judul PKA">
                                     <a href="{{ route('program-kerja.show', $pka->id) }}" class="font-weight-bold text-primary">
                                         {{ $pka->judul }}
                                     </a>
@@ -59,11 +59,11 @@
                                         · {{ $pka->created_at->format('d/m/Y') }}
                                     </small>
                                 </td>
-                                <td>
+                                <td data-label="Surat Tugas">
                                     <small>{{ $pka->suratTugas->nomor_st ?? '-' }}</small>
                                 </td>
-                                <td>{{ $pka->suratTugas->nama_objek ?? '-' }}</td>
-                                <td>
+                                <td data-label="Objek">{{ $pka->suratTugas->nama_objek ?? '-' }}</td>
+                                <td data-label="Progres">
                                     @php $progress = $pka->progressPercentage(); @endphp
                                     <div class="progress" style="height: 20px; border-radius: 10px;">
                                         <div class="progress-bar {{ $progress >= 100 ? 'bg-success' : ($progress >= 50 ? 'bg-primary' : 'bg-warning') }}" 
@@ -75,10 +75,10 @@
                                     </div>
                                     <small class="text-muted">{{ $pka->langkah->where('status', 'completed')->count() }}/{{ $pka->langkah->count() }} langkah</small>
                                 </td>
-                                <td>
+                                <td data-label="Status">
                                     <span class="badge {{ $pka->status_badge }} p-2">{{ $pka->status_label }}</span>
                                 </td>
-                                <td>
+                                <td data-label="Aksi">
                                     <div class="btn-group">
                                         <a href="{{ route('program-kerja.show', $pka->id) }}" class="btn btn-sm btn-outline-primary" title="Detail">
                                             <i class="fas fa-eye"></i>

@@ -64,7 +64,7 @@
                 </div>
             @endif
 
-            <table class="table table-hover" id="templateTable">
+            <table class="table table-hover table-stack" id="templateTable">
                 <thead class="bg-light">
                     <tr>
                         <th>Nama Template</th>
@@ -80,9 +80,9 @@
                 <tbody>
                     @forelse($templates as $template)
                         <tr>
-                            <td class="font-weight-bold">{{ $template->nama }}</td>
-                            <td>{{ $template->jenisPenugasan->nama ?? '-' }}</td>
-                            <td>
+                            <td data-label="Nama Template" class="font-weight-bold">{{ $template->nama }}</td>
+                            <td data-label="Jenis Penugasan">{{ $template->jenisPenugasan->nama ?? '-' }}</td>
+                            <td data-label="Metode">
                                 @php
                                     $metodeMap = [
                                         'tally' => ['label' => 'Tally', 'class' => 'secondary', 'icon' => 'fa-percentage'],
@@ -95,28 +95,28 @@
                                     <i class="fas {{ $m['icon'] }} mr-1"></i>{{ $m['label'] }}
                                 </span>
                             </td>
-                            <td>{{ $template->tahun }}</td>
-                            <td class="text-center">
+                            <td data-label="Tahun">{{ $template->tahun }}</td>
+                            <td data-label="Statistik" class="text-center">
                                 <small class="text-muted">
                                     <i class="fas fa-sitemap mr-1"></i>{{ $template->indicators_count }} indikator
                                     · <i class="fas fa-check-circle mr-1"></i>{{ $template->criteria_count }} kriteria
                                 </small>
                             </td>
-                            <td class="text-center">
+                            <td data-label="Dipakai" class="text-center">
                                 @if($template->kk_count > 0)
                                     <span class="badge badge-success">{{ $template->kk_count }} KK</span>
                                 @else
                                     <span class="text-muted">—</span>
                                 @endif
                             </td>
-                            <td>
+                            <td data-label="Status">
                                 @if($template->is_active)
                                     <span class="badge badge-success"><i class="fas fa-check mr-1"></i>Aktif</span>
                                 @else
                                     <span class="badge badge-secondary">Draft</span>
                                 @endif
                             </td>
-                            <td>
+                            <td data-label="Aksi">
                                 <div class="btn-action-group">
                                     <a href="{{ route('templates.builder', $template->id) }}" class="btn btn-action btn-action-info btn-action-builder" title="Builder">
                                         <i class="fas fa-tools mr-1"></i> Builder
