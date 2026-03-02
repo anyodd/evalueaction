@@ -199,6 +199,17 @@ graph LR
     <script type="module">
         import mermaid from 'https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.esm.min.mjs';
         
+        // Detect mobile screen
+        const isMobile = window.innerWidth < 768;
+        const direction = isMobile ? 'TD' : 'LR';
+        
+        // Update direction before initialization
+        const mermaidElement = document.querySelector('.mermaid');
+        if (mermaidElement) {
+            let content = mermaidElement.textContent;
+            mermaidElement.textContent = content.replace('graph LR', `graph ${direction}`);
+        }
+
         mermaid.initialize({ 
             startOnLoad: true,
             securityLevel: 'loose', // Allow clicking
