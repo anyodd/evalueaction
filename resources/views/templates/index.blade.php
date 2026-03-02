@@ -11,6 +11,43 @@
     </div>
 @stop
 
+@section('css')
+<style>
+    .btn-action-group {
+        display: flex;
+        gap: 6px;
+        align-items: center;
+    }
+    .btn-action {
+        width: 34px;
+        height: 34px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 50% !important;
+        transition: all 0.2s ease;
+        border: none;
+        box-shadow: 0 2px 4px rgba(0,0,0,0.08);
+    }
+    .btn-action:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    .btn-action-builder {
+        width: auto;
+        padding: 0 15px;
+        border-radius: 20px !important;
+        font-weight: 600;
+        letter-spacing: 0.3px;
+    }
+    .btn-action-info { background: linear-gradient(135deg, #17a2b8, #117a8b); color: white; }
+    .btn-action-preview { background: white; color: #17a2b8; border: 1px solid #17a2b8 !important; }
+    .btn-action-warning { background: linear-gradient(135deg, #ffc107, #e0a800); color: #212529; }
+    .btn-action-primary { background: white; color: #007bff; border: 1px solid #007bff !important; }
+    .btn-action-danger { background: linear-gradient(135deg, #dc3545, #c82333); color: white; }
+</style>
+@stop
+
 @section('content')
     <div class="card shadow-sm border-0" style="border-radius: 10px;">
         <div class="card-body">
@@ -80,26 +117,26 @@
                                 @endif
                             </td>
                             <td>
-                                <div class="btn-group btn-group-sm">
-                                    <a href="{{ route('templates.builder', $template->id) }}" class="btn btn-info" title="Builder">
-                                        <i class="fas fa-tools"></i> Builder
+                                <div class="btn-action-group">
+                                    <a href="{{ route('templates.builder', $template->id) }}" class="btn btn-action btn-action-info btn-action-builder" title="Builder">
+                                        <i class="fas fa-tools mr-1"></i> Builder
                                     </a>
-                                    <a href="{{ route('templates.preview', $template->id) }}" class="btn btn-outline-info" title="Preview" target="_blank">
+                                    <a href="{{ route('templates.preview', $template->id) }}" class="btn btn-action btn-action-preview" title="Preview" target="_blank">
                                         <i class="fas fa-eye"></i>
                                     </a>
-                                    <a href="{{ route('templates.edit', $template->id) }}" class="btn btn-warning" title="Edit Header">
+                                    <a href="{{ route('templates.edit', $template->id) }}" class="btn btn-action btn-action-warning" title="Edit Header">
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     <form action="{{ route('templates.clone', $template->id) }}" method="POST" style="display:inline-block">
                                         @csrf
-                                        <button class="btn btn-sm btn-outline-primary" onclick="return confirm('Clone template ini?')" title="Clone">
+                                        <button class="btn btn-action btn-action-primary" onclick="return confirm('Clone template ini?')" title="Clone">
                                             <i class="fas fa-copy"></i>
                                         </button>
                                     </form>
                                     @if($template->kk_count == 0)
                                     <form action="{{ route('templates.destroy', $template->id) }}" method="POST" style="display:inline-block">
                                         @csrf @method('DELETE')
-                                        <button class="btn btn-sm btn-danger" onclick="return confirm('Hapus template ini?')" title="Hapus">
+                                        <button class="btn btn-action btn-action-danger" onclick="return confirm('Hapus template ini?')" title="Hapus">
                                             <i class="fas fa-trash"></i>
                                         </button>
                                     </form>

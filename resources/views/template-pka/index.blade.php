@@ -11,6 +11,45 @@
     </div>
 @stop
 
+@section('css')
+<style>
+    .btn-action-group {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        justify-content: center;
+    }
+    .btn-action {
+        width: 36px;
+        height: 36px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: 12px !important;
+        transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        border: none;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.06);
+        position: relative;
+    }
+    .btn-action:hover {
+        transform: translateY(-3px);
+        box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+    }
+    .btn-action-builder {
+        width: auto;
+        padding: 0 16px;
+        border-radius: 12px !important;
+        font-weight: 600;
+        background: linear-gradient(135deg, #00c6ff, #0072ff);
+        color: white;
+    }
+    .btn-action-warning { background: linear-gradient(135deg, #f6d365, #fda085); color: white; }
+    .btn-action-danger { background: linear-gradient(135deg, #ff0844, #ffb199); color: white; }
+    
+    .table td { vertical-align: middle !important; }
+</style>
+@stop
+
 @section('content')
     <div class="card shadow-sm border-0" style="border-radius: 10px;">
         <div class="card-body">
@@ -49,17 +88,19 @@
                                 @endif
                             </td>
                             <td>
-                                <div class="btn-group btn-group-sm">
-                                    <a href="{{ route('template-pka.show', $tpl->id) }}" class="btn btn-info" title="Builder Langkah">
-                                        <i class="fas fa-tools"></i> Builder
+                                <div class="btn-action-group">
+                                    <a href="{{ route('template-pka.show', $tpl->id) }}" class="btn btn-action btn-action-builder" title="Builder Langkah">
+                                        <i class="fas fa-tools mr-1"></i> Builder
                                     </a>
-                                    <a href="{{ route('template-pka.edit', $tpl->id) }}" class="btn btn-warning" title="Edit">
+                                    <a href="{{ route('template-pka.edit', $tpl->id) }}" class="btn btn-action btn-action-warning" title="Edit">
                                         <i class="fas fa-edit"></i>
                                     </a>
                                     @if($tpl->status !== 'published')
                                     <form action="{{ route('template-pka.destroy', $tpl->id) }}" method="POST" style="display:inline-block">
                                         @csrf @method('DELETE')
-                                        <button class="btn btn-sm btn-danger" onclick="return confirm('Hapus template ini?')"><i class="fas fa-trash"></i></button>
+                                        <button class="btn btn-action btn-action-danger" onclick="return confirm('Hapus template ini?')" title="Hapus">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
                                     </form>
                                     @endif
                                 </div>
