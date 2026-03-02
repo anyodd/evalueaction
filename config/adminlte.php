@@ -187,15 +187,16 @@ return [
                     'icon' => 'fas fa-fw fa-user-tag',
                 ],
                 [
-                    'text' => 'Template Kertas Kerja',
-                    'url'  => 'templates',
-                    'icon' => 'fas fa-fw fa-layer-group',
-                ],
-                [
                     'text' => 'Template Program Kerja',
                     'url'  => 'template-pka',
                     'icon' => 'fas fa-fw fa-clipboard-list',
                 ],
+                [
+                    'text' => 'Template Kertas Kerja',
+                    'url'  => 'templates',
+                    'icon' => 'fas fa-fw fa-layer-group',
+                ],
+
             ],
         ],
         ['header' => 'PENGATURAN AKUN'],
