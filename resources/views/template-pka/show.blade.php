@@ -133,6 +133,20 @@
                                 </div>
                             </div>
                         </div>
+                        <div class="row mt-2">
+                            <div class="col-md-12">
+                                <div class="form-group mb-0">
+                                    <label class="text-sm">Tautkan Template Kertas Kerja <small class="text-muted">(Opsional)</small></label>
+                                    <select name="kk_template_id" class="form-control form-control-sm">
+                                        <option value="">— Tidak Menggunakan Template / Bebas —</option>
+                                        @foreach($kkTemplates as $kt)
+                                            <option value="{{ $kt->id }}">{{ $kt->nama }} ({{ $kt->tahun }}) - {{ $kt->jenisPenugasan->nama ?? 'Umum' }}</option>
+                                        @endforeach
+                                    </select>
+                                    <small class="text-muted d-block mt-1">Jika dipilih, anggota tim akan diminta mengisi kertas kerja sesuai template ini.</small>
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="modal-footer py-2 bg-light">
                         <button type="button" class="btn btn-sm btn-secondary" data-dismiss="modal">Batal</button>

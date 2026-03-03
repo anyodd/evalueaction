@@ -8,6 +8,23 @@
 <div class="form-group border-bottom pb-4">
     <label class="font-weight-bold text-dark mb-2">{{ $question->uraian }}</label>
     
+    @if(isset($question->langkahs) && $question->langkahs->count() > 0)
+    <div class="mb-3">
+        <button class="btn btn-sm btn-outline-info rounded-pill" type="button" data-toggle="collapse" data-target="#langkah-{{ $question->id }}" aria-expanded="false" aria-controls="langkah-{{ $question->id }}">
+            <i class="fas fa-info-circle mr-1"></i> Lihat Panduan Langkah Kerja
+        </button>
+        <div class="collapse mt-2" id="langkah-{{ $question->id }}">
+            <div class="card card-body bg-light border-info text-sm mb-0 p-3" style="border-radius: 10px;">
+                <ol class="mb-0 pl-3">
+                    @foreach($question->langkahs as $langkah)
+                        <li class="mb-1">{{ $langkah->uraian }}</li>
+                    @endforeach
+                </ol>
+            </div>
+        </div>
+    </div>
+    @endif
+    
     @if($question->tipe == 'criteria_tally')
         {{-- Full Width Layout for Matrix/Table --}}
         <div class="row mb-3">
@@ -241,7 +258,7 @@
                               id="score-param-{{ $question->id }}"
                               data-indicator-id="{{ $question->id }}"
                               style="font-size: 0.9em">
-                            Skor: <strong>{{ number_format((float)$nilai, 2) }}</strong> (Level {{ floor($nilai) }})
+                            Skor: <strong>{{ number_format((float)$nilai, 2) }}</strong> (Level {{ floor((float)$nilai) }})
                         </span>
                     @else
                         <span class="badge badge-info p-2 score-badge" 

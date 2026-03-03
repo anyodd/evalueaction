@@ -23,9 +23,12 @@ class PkLangkah extends Model
         'tgl_selesai',
         'status',
         'kertas_kerja_id',
+        'kk_template_id',
+        'template_indicator_id',
         'catatan_hasil',
         'ref_dokumen',
         'from_template',
+        'is_mandatory',
     ];
 
     protected $casts = [
@@ -51,6 +54,16 @@ class PkLangkah extends Model
     public function kertasKerja()
     {
         return $this->belongsTo(KertasKerja::class, 'kertas_kerja_id');
+    }
+
+    public function kkTemplate()
+    {
+        return $this->belongsTo(KkTemplate::class, 'kk_template_id');
+    }
+
+    public function templateIndicator()
+    {
+        return $this->belongsTo(TemplateIndicator::class, 'template_indicator_id');
     }
 
     public function assignments()

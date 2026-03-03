@@ -109,42 +109,148 @@
         </div>
         @endif
 
-        {{-- Langkah-langkah Table --}}
-        <div class="card shadow-sm border-0" style="border-radius: 15px;">
-            <div class="card-header bg-white border-0">
+        {{-- Hierarki Kertas Kerja & Langkah Kerja --}}
+        <div class="card shadow-sm border-0 mb-4" style="border-radius: 15px;">
+            <div class="card-header bg-white border-0 d-flex justify-content-between align-items-center">
                 <h5 class="card-title font-weight-bold text-primary mb-0">
-                    <i class="fas fa-list-ol mr-2"></i>Langkah-langkah Audit
+                    <i class="fas fa-list-ol mr-2"></i>Langkah-langkah Audit Berdasarkan Kertas Kerja
                 </h5>
+                @if($canManage)
+                    <button type="button" class="btn btn-outline-success btn-sm rounded-pill shadow-sm btn-add-langkah-modal" data-param-id="" data-param-uraian="">
+                        <i class="fas fa-plus mr-1"></i> Tambah Prosedur (Diluar Template)
+                    </button>
+                @endif
             </div>
-            <div class="card-body p-0">
-                <div class="table-responsive">
-                    <table class="table table-hover mb-0">
-                        <thead class="bg-light">
-                            <tr>
-                                <th width="5%" class="text-center">#</th>
-                                <th width="25%">Langkah</th>
-                                <th width="12%">Prosedur</th>
-                                <th width="15%">Ditugaskan ke</th>
-                                <th width="13%">Kertas Kerja</th>
-                                <th width="10%">Status</th>
-                                <th width="10%">Target</th>
-                                <th width="10%">Aksi</th>
-                            </tr>
-                        </thead>
-                        <tbody id="langkah-tbody">
-                            @forelse($pka->langkahRoot as $langkah)
-                                @include('program-kerja.partials.langkah-row', ['langkah' => $langkah, 'level' => 0])
-                            @empty
-                                <tr>
-                                    <td colspan="8" class="text-center text-muted py-4">
-                                        <i class="fas fa-inbox fa-2x mb-2 d-block"></i>
-                                        Belum ada langkah. <a href="{{ route('program-kerja.edit', $pka->id) }}">Tambah langkah</a>.
-                                    </td>
-                                </tr>
-                            @endforelse
-                        </tbody>
-                    </table>
-                </div>
+            
+            <div class="card-body p-0 border-top bg-light">
+                @if($templateIndicators->count() > 0)
+                    <div class="accordion" id="accordionKertasKerja">
+                        @foreach($templateIndicators as $index1 => $aspek)
+                            <div class="card border-0 mb-1">
+                                <div class="card-header bg-white shadow-sm" id="headingAspek{{ $aspek->id }}">
+                                    <h2 class="mb-0">
+                                        <button class="btn btn-link btn-block text-left font-weight-bold text-dark text-decoration-none" type="button" data-toggle="collapse" data-target="#collapseAspek{{ $aspek->id }}">
+                                            <i class="fas fa-folder-open mr-2 text-warning"></i>Aspek: {{ $aspek->uraian }}
+                                            <i class="fas fa-chevron-down float-right text-muted mt-1" style="font-size: 0.8rem;"></i>
+                                        </button>
+                                    </h2>
+                                </div>
+                                <div id="collapseAspek{{ $aspek->id }}" class="collapse show" data-parent="#accordionKertasKerja">
+                                    <div class="card-body p-0">
+                                        @foreach($aspek->children as $index2 => $indikator)
+                                            <div class="bg-white border-bottom p-3 pl-4">
+                                                <h6 class="font-weight-bold mb-3"><i class="fas fa-layer-group text-info mr-2"></i>Indikator: {{ $indikator->uraian }}</h6>
+                                                
+                                                @foreach($indikator->children as $index3 => $parameter)
+                                                    <div class="ml-4 mt-2 p-3 border border-primary rounded bg-light shadow-sm">
+                                                        <div class="d-flex justify-content-between align-items-start mb-2">
+                                                            <div>
+                                                                <h6 class="font-weight-bold text-primary mb-1"><i class="fas fa-check-square mr-2"></i>Parameter: {{ $parameter->uraian }}</h6>
+                                                                @if($parameter->criteria && $parameter->criteria->count() > 0)
+                                                                    <div class="ml-4 text-sm text-muted mt-2">
+                                                                        <a class="text-info text-decoration-none collapsed" data-toggle="collapse" href="#kriteria-{{ $parameter->id }}" role="button" aria-expanded="false" aria-controls="kriteria-{{ $parameter->id }}">
+                                                                            <i class="fas fa-info-circle mr-1"></i> Tampilkan Kriteria Pemenuhan
+                                                                        </a>
+                                                                        <div class="collapse mt-2" id="kriteria-{{ $parameter->id }}">
+                                                                            <div class="p-3 bg-white border rounded shadow-sm">
+                                                                                <strong class="text-dark d-block mb-2">Pedoman Kriteria Pemenuhan:</strong>
+                                                                                <ul class="mb-0 pl-3 text-dark">
+                                                                                    @foreach($parameter->criteria as $kriteria)
+                                                                                        <li class="mb-1 pb-1 border-bottom" style="border-bottom-color: #f0f0f0 !important;">{{ $kriteria->uraian }}</li>
+                                                                                    @endforeach
+                                                                                </ul>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                @endif
+                                                            </div>
+                                                            @if($canManage)
+                                                                <div class="d-flex align-items-center">
+                                                                    <select class="form-control form-control-sm mr-2 bulk-assign-select shadow-sm" data-param-id="{{ $parameter->id }}" title="Tugaskan semua prosedur di parameter ini sekaligus" style="width: auto; min-width: 180px;">
+                                                                        <option value="">-- Tugaskan Semua Ke --</option>
+                                                                        @foreach($teamMembers as $member)
+                                                                            <option value="{{ $member->user_id }}">{{ $member->user->name }} ({{ $member->role_dalam_tim }})</option>
+                                                                        @endforeach
+                                                                    </select>
+                                                                    <button type="button" class="btn btn-sm btn-success shadow-sm btn-add-langkah-modal text-nowrap" data-param-id="{{ $parameter->id }}" data-param-uraian="{{ $parameter->uraian }}">
+                                                                        <i class="fas fa-plus mr-1"></i> Tambah Prosedur
+                                                                    </button>
+                                                                </div>
+                                                            @endif
+                                                        </div>
+
+                                                        {{-- Tabel Langkah Kerja untuk Parameter ini --}}
+                                                        @php
+                                                            $langkahForParam = $langkahByIndicator->get($parameter->id, collect());
+                                                        @endphp
+                                                        @if($langkahForParam->count() > 0)
+                                                            <div class="table-responsive mt-3 bg-white rounded shadow-sm border">
+                                                                <table class="table table-sm table-hover mb-0 text-sm">
+                                                                    <thead class="bg-primary text-white">
+                                                                        <tr>
+                                                                            <th width="5%" class="text-center">#</th>
+                                                                            <th width="40%">Prosedur / Langkah Kerja</th>
+                                                                            <th width="20%">Ditugaskan Ke</th>
+                                                                            <th width="20%">Status</th>
+                                                                            <th width="15%">Aksi</th>
+                                                                        </tr>
+                                                                    </thead>
+                                                                    <tbody>
+                                                                        @foreach($langkahForParam as $idx => $langkah)
+                                                                            @include('program-kerja.partials.langkah-row-new', ['langkah' => $langkah, 'nomor' => $idx + 1])
+                                                                        @endforeach
+                                                                    </tbody>
+                                                                </table>
+                                                            </div>
+                                                        @else
+                                                            <div class="alert alert-secondary text-center py-2 mt-3 mb-0" style="font-size: 0.85rem;">
+                                                                <i class="fas fa-info-circle mr-1"></i> Belum ada prosedur langkah kerja untuk memenuhi parameter ini.
+                                                            </div>
+                                                        @endif
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <div class="text-center py-5 bg-white">
+                        <i class="fas fa-file-alt fa-3x mb-3 text-light"></i>
+                        <h5>Belum Ada Hierarki Target Kertas Kerja</h5>
+                        <p class="text-muted">Surat Tugas ini tidak dikaitkan dengan Template Kertas Kerja atau belum ada strukturnya.</p>
+                    </div>
+                @endif
+                
+                {{-- Langkah Non-Mapping (Bebas) --}}
+                @php
+                    $langkahBebas = $langkahByIndicator->get('', collect());
+                @endphp
+                @if($langkahBebas->count() > 0)
+                    <div class="p-4 bg-white border-top">
+                        <h6 class="font-weight-bold text-danger"><i class="fas fa-paperclip mr-2"></i>Langkah Kerja Tambahan (Tidak Terikat Parameter)</h6>
+                        <div class="table-responsive mt-3 bg-white rounded shadow-sm border border-danger">
+                            <table class="table table-sm table-hover mb-0 text-sm">
+                                <thead class="bg-danger text-white">
+                                    <tr>
+                                        <th width="5%" class="text-center">#</th>
+                                        <th width="40%">Prosedur / Langkah Kerja</th>
+                                        <th width="20%">Ditugaskan Ke</th>
+                                        <th width="20%">Status</th>
+                                        <th width="15%">Aksi</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($langkahBebas as $idx => $langkah)
+                                        @include('program-kerja.partials.langkah-row-new', ['langkah' => $langkah, 'nomor' => $idx + 1])
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                @endif
             </div>
         </div>
 
@@ -176,7 +282,67 @@
     </div>
 @stop
 
-    {{-- Modal: Assign Langkah --}}
+    {{-- Modal: Tambah Langkah --}}
+    <div class="modal fade" id="addLangkahModal" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <form action="{{ route('program-kerja.langkah.store', $pka->id) }}" method="POST">
+                @csrf
+                <div class="modal-content" style="border-radius: 15px;">
+                    <div class="modal-header border-0 bg-light">
+                        <h5 class="modal-title font-weight-bold"><i class="fas fa-plus-circle mr-2 text-primary"></i>Tambah Langkah Kerja Baru</h5>
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="template_indicator_id" id="add-langkah-param-id">
+                        
+                        <div id="param-context-box" class="alert alert-info" style="display: none;">
+                            <i class="fas fa-info-circle mr-1"></i> <strong>Mengisi Parameter:</strong> <span id="add-langkah-param-uraian"></span>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="font-weight-bold">Judul Langkah / Prosedur Utama <span class="text-danger">*</span></label>
+                            <input type="text" name="judul" class="form-control" required placeholder="Contoh: Lakukan Pengujian ...">
+                        </div>
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="font-weight-bold">Jenis Prosedur</label>
+                                    <select name="jenis_prosedur" class="form-control">
+                                        <option value="">-- Pilih --</option>
+                                        <option value="wawancara">Wawancara</option>
+                                        <option value="observasi">Observasi</option>
+                                        <option value="inspeksi_dokumen">Inspeksi Dokumen</option>
+                                        <option value="analisis_data">Analisis Data</option>
+                                        <option value="konfirmasi">Konfirmasi</option>
+                                        <option value="rekalkulasi">Rekalkulasi</option>
+                                        <option value="lainnya">Lainnya</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="font-weight-bold">Target Waktu (Hari)</label>
+                                    <input type="number" name="target_hari" class="form-control" placeholder="Opsional" min="1">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-0">
+                            <label class="font-weight-bold">Deskripsi Tambahan <small class="text-muted">(Opsional)</small></label>
+                            <textarea name="deskripsi" class="form-control" rows="3" placeholder="Detail langkah jika diperlukan..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-default" data-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-primary rounded-pill px-4">
+                            <i class="fas fa-save mr-1"></i> Simpan Langkah
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
     <div class="modal fade" id="assignModal" tabindex="-1">
         <div class="modal-dialog">
             <div class="modal-content" style="border-radius: 15px;">
@@ -218,39 +384,7 @@
         </div>
     </div>
 
-    {{-- Modal: Link Kertas Kerja --}}
-    <div class="modal fade" id="linkKkModal" tabindex="-1">
-        <div class="modal-dialog">
-            <div class="modal-content" style="border-radius: 15px;">
-                <div class="modal-header border-0">
-                    <h5 class="modal-title font-weight-bold"><i class="fas fa-link mr-2"></i>Hubungkan Kertas Kerja</h5>
-                    <button type="button" class="close" data-dismiss="modal">&times;</button>
-                </div>
-                <div class="modal-body">
-                    <input type="hidden" id="link-langkah-id">
-                    <div class="form-group">
-                        <label class="font-weight-bold">Langkah</label>
-                        <p id="link-langkah-judul" class="text-muted"></p>
-                    </div>
-                    <div class="form-group">
-                        <label class="font-weight-bold">Kertas Kerja</label>
-                        <select id="link-kk-id" class="form-control">
-                            <option value="">-- Tanpa Link (Hapus) --</option>
-                            @foreach($kertasKerjaList as $kk)
-                                <option value="{{ $kk->id }}">{{ $kk->judul_kk }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                </div>
-                <div class="modal-footer border-0">
-                    <button type="button" class="btn btn-default" data-dismiss="modal">Batal</button>
-                    <button type="button" class="btn btn-primary rounded-pill px-4" id="btn-submit-link">
-                        <i class="fas fa-link mr-1"></i> Hubungkan
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+
 
     {{-- Modal: Update Status --}}
     <div class="modal fade" id="statusModal" tabindex="-1">
@@ -311,6 +445,70 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script>
         let csrfToken = $('meta[name="csrf-token"]').attr('content');
+
+        // ======== BULK ASSIGN ========
+        $(document).on('change', '.bulk-assign-select', function() {
+            let userId = $(this).val();
+            let paramId = $(this).data('param-id');
+            let selectElem = $(this);
+            
+            if(!userId) return;
+            
+            Swal.fire({
+                title: 'Tugaskan Massal?',
+                text: "Anda akan menugaskan seluruh langkah kerja pada parameter ini kepada anggota tersebut.",
+                icon: 'question',
+                showCancelButton: true,
+                confirmButtonColor: '#3085d6',
+                cancelButtonColor: '#d33',
+                confirmButtonText: 'Ya, Tugaskan!',
+                cancelButtonText: 'Batal'
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    selectElem.prop('disabled', true);
+                    
+                    $.ajax({
+                        url: '{{ route("program-kerja.bulk-assign") }}',
+                        method: 'POST',
+                        data: {
+                            _token: csrfToken,
+                            program_kerja_id: '{{ $pka->id }}',
+                            parameter_id: paramId,
+                            user_id: userId
+                        },
+                        success: function(res) {
+                            toastr.success(res.message);
+                            setTimeout(() => location.reload(), 1000);
+                        },
+                        error: function(err) {
+                            selectElem.prop('disabled', false);
+                            selectElem.val(''); // reset
+                            let msg = err.responseJSON && err.responseJSON.message ? err.responseJSON.message : 'Gagal melakukan penugasan massal.';
+                            toastr.error(msg);
+                        }
+                    });
+                } else {
+                    selectElem.val(''); // Reset
+                }
+            });
+        });
+
+        // ======== TAMBAH LANGKAH MODAL ========
+        $(document).on('click', '.btn-add-langkah-modal', function() {
+            let paramId = $(this).data('param-id');
+            let paramUraian = $(this).data('param-uraian');
+            
+            $('#add-langkah-param-id').val(paramId);
+            
+            if (paramId) {
+                $('#add-langkah-param-uraian').text(paramUraian);
+                $('#param-context-box').show();
+            } else {
+                $('#param-context-box').hide();
+            }
+            
+            $('#addLangkahModal').modal('show');
+        });
 
         // ======== ASSIGN LANGKAH ========
         $(document).on('click', '.btn-assign', function() {
@@ -413,45 +611,7 @@
             });
         });
 
-        // ======== LINK KERTAS KERJA ========
-        $(document).on('click', '.btn-link-kk', function() {
-            let langkahId = $(this).data('langkah-id');
-            let judul = $(this).data('langkah-judul');
-            let currentKk = $(this).data('current-kk');
-            $('#link-langkah-id').val(langkahId);
-            $('#link-langkah-judul').text(judul);
-            $('#link-kk-id').val(currentKk || '');
-            $('#linkKkModal').modal('show');
-        });
 
-        $(document).on('click', '#btn-submit-link', function() {
-            let btn = $(this);
-            let langkahId = $('#link-langkah-id').val();
-
-            btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Menghubungkan...');
-
-            $.ajax({
-                url: '/program-kerja/langkah/' + langkahId + '/link-kk',
-                type: 'POST',
-                data: {
-                    _token: csrfToken,
-                    kertas_kerja_id: $('#link-kk-id').val() || null
-                },
-                success: function(response) {
-                    if (response.success) {
-                        toastr.success(response.message);
-                        $('#linkKkModal').modal('hide');
-                        location.reload();
-                    }
-                },
-                error: function(xhr) {
-                    toastr.error(xhr.responseJSON?.message || 'Gagal menghubungkan.');
-                },
-                complete: function() {
-                    btn.prop('disabled', false).html('<i class="fas fa-link mr-1"></i> Hubungkan');
-                }
-            });
-        });
 
         // ======== REMOVE ASSIGNMENT ========
         $(document).on('click', '.btn-remove-assignment', function() {

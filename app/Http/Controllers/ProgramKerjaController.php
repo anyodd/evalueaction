@@ -60,14 +60,7 @@ class ProgramKerjaController extends Controller
         $suratTugas = $stQuery->latest()->get();
         $selectedStId = $request->get('st_id');
 
-        // Published PKA templates for clone
-        $pkaTemplates = ProgramKerja::whereNull('st_id')
-            ->where('status', 'published')
-            ->withCount('langkah')
-            ->latest()
-            ->get();
-
-        return view('program-kerja.create', compact('suratTugas', 'selectedStId', 'pkaTemplates'));
+        return view('program-kerja.create', compact('suratTugas', 'selectedStId'));
     }
 
     /**
@@ -84,16 +77,10 @@ class ProgramKerjaController extends Controller
             'metodologi' => 'nullable|string',
             'tgl_mulai' => 'nullable|date',
             'tgl_selesai' => 'nullable|date|after_or_equal:tgl_mulai',
-            'template_id' => 'nullable|exists:program_kerja,id',
-            'langkah' => 'nullable|array',
-            'langkah.*.judul' => 'required|string|max:255',
-            'langkah.*.deskripsi' => 'nullable|string',
-            'langkah.*.jenis_prosedur' => 'nullable|string',
-            'langkah.*.target_hari' => 'nullable|integer|min:1',
         ]);
 
-        DB::transaction(function () use ($request) {
-            $pka = ProgramKerja::create([
+        $pka = DB::transaction(function () use ($request) {
+            $createdPka = ProgramKerja::create([
                 'st_id' => $request->st_id,
                 'judul' => $request->judul,
                 'deskripsi' => $request->deskripsi,
@@ -106,32 +93,54 @@ class ProgramKerjaController extends Controller
                 'status' => 'draft',
             ]);
 
-            // Clone langkah from template if template_id is provided
-            if ($request->template_id) {
-                $this->cloneTemplateLangkah($request->template_id, $pka->id);
-            }
+            // Auto-generate Langkah Kerja Standar from SuratTugas -> KkTemplate
+            $createdPka->load('suratTugas');
+            $templateId = $createdPka->suratTugas->template_id;
 
-            // Save additional manual langkah
-            if ($request->langkah) {
-                $startUrutan = PkLangkah::where('program_kerja_id', $pka->id)->max('urutan') ?? 0;
-                foreach ($request->langkah as $index => $langkahData) {
-                    if (!empty($langkahData['judul'])) {
-                        PkLangkah::create([
-                            'program_kerja_id' => $pka->id,
-                            'urutan' => $startUrutan + $index + 1,
-                            'judul' => $langkahData['judul'],
-                            'deskripsi' => $langkahData['deskripsi'] ?? null,
-                            'jenis_prosedur' => $langkahData['jenis_prosedur'] ?? null,
-                            'target_hari' => $langkahData['target_hari'] ?? null,
-                            'from_template' => false,
-                        ]);
+            if ($templateId) {
+                // Get all Parameter Indicators (level 3) for this Template
+                $indicators = \App\Models\TemplateIndicator::where('template_id', $templateId)->get();
+                $indicatorIds = $indicators->pluck('id');
+
+                if ($indicatorIds->isNotEmpty()) {
+                    // Get all target langkah standards
+                    $langkahStandars = \App\Models\TemplateLangkah::whereIn('indicator_id', $indicatorIds)->get();
+
+                    if ($langkahStandars->isNotEmpty()) {
+                        // Group by indicator_id to manage starting urutan per indicator
+                        $langkahCounter = [];
+
+                        $insertData = [];
+                        foreach ($langkahStandars as $ls) {
+                            $indId = $ls->indicator_id;
+                            if(!isset($langkahCounter[$indId])) $langkahCounter[$indId] = 1;
+                            
+                            $insertData[] = [
+                                'program_kerja_id' => $createdPka->id,
+                                'urutan' => $langkahCounter[$indId]++,
+                                'judul' => $ls->uraian,
+                                'jenis_prosedur' => $ls->jenis_prosedur,
+                                'template_indicator_id' => $indId,
+                                'from_template' => true,
+                                'is_mandatory' => true,
+                                'status' => 'pending',
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ];
+                        }
+
+                        if (!empty($insertData)) {
+                            PkLangkah::insert($insertData);
+                        }
                     }
                 }
             }
+
+            return $createdPka;
         });
 
-        return redirect()->route('program-kerja.index')
-            ->with('success', 'Program Kerja berhasil dibuat!');
+        return redirect()->route('program-kerja.show', $pka->id)
+            ->with('success', 'Program Kerja berhasil dibuat beserta Langkah Kerja Standar.');
     }
 
     /**
@@ -147,6 +156,8 @@ class ProgramKerjaController extends Controller
             'langkahRoot.children',
             'langkahRoot.assignments.user',
             'langkahRoot.kertasKerja',
+            'langkahRoot.kkTemplate',
+            'langkahRoot.children.kkTemplate',
         ])->findOrFail($id);
 
         $this->authorizeAccess($pka);
@@ -169,7 +180,28 @@ class ProgramKerjaController extends Controller
         $canManage = in_array($roleName, ['Superadmin']) 
             || in_array($roleInTeam, ['Ketua Tim', 'Dalnis']);
 
-        return view('program-kerja.show', compact('pka', 'kertasKerjaList', 'teamMembers', 'canManage'));
+        // Fetch KK Template Indicators hierarchy (Aspek -> Indikator -> Parameter)
+        $kkTemplateId = $pka->suratTugas->template_id ?? null;
+        $templateIndicators = collect();
+        if ($kkTemplateId) {
+            $templateIndicators = \App\Models\TemplateIndicator::where('template_id', $kkTemplateId)
+                ->whereNull('parent_id') // Get root / Level 1 (Aspek)
+                ->with(['children.children' => function($q) {
+                    $q->with('criteria'); // Load criteria for Level 3 (Parameter)
+                }])
+                ->get();
+        }
+
+        // Fetch all langkahs for this PKA to group them by template_indicator_id
+        $semuaLangkah = \App\Models\PkLangkah::where('program_kerja_id', $pka->id)
+            ->with(['assignments.user', 'kertasKerja', 'templateIndicator', 'children'])
+            ->orderBy('urutan')
+            ->get();
+            
+        // Group by template_indicator_id. Langkah without indicator will be grouped under '' (empty string)
+        $langkahByIndicator = $semuaLangkah->groupBy('template_indicator_id');
+
+        return view('program-kerja.show', compact('pka', 'kertasKerjaList', 'teamMembers', 'canManage', 'templateIndicators', 'langkahByIndicator'));
     }
 
     /**
@@ -177,7 +209,7 @@ class ProgramKerjaController extends Controller
      */
     public function edit($id)
     {
-        $pka = ProgramKerja::with(['suratTugas', 'langkahRoot.children'])->findOrFail($id);
+        $pka = ProgramKerja::with(['suratTugas'])->findOrFail($id);
         $this->authorizeAccess($pka);
 
         $user = auth()->user();
@@ -215,70 +247,19 @@ class ProgramKerjaController extends Controller
             'status' => 'nullable|in:draft,active,completed,archived',
             'tgl_mulai' => 'nullable|date',
             'tgl_selesai' => 'nullable|date|after_or_equal:tgl_mulai',
-            'langkah' => 'nullable|array',
-            'langkah.*.id' => 'nullable|integer',
-            'langkah.*.judul' => 'required|string|max:255',
-            'langkah.*.deskripsi' => 'nullable|string',
-            'langkah.*.jenis_prosedur' => 'nullable|string',
-            'langkah.*.target_hari' => 'nullable|integer|min:1',
         ]);
 
-        DB::transaction(function () use ($request, $pka) {
-            $pka->update([
-                'st_id' => $request->st_id,
-                'judul' => $request->judul,
-                'deskripsi' => $request->deskripsi,
-                'tujuan' => $request->tujuan,
-                'ruang_lingkup' => $request->ruang_lingkup,
-                'metodologi' => $request->metodologi,
-                'status' => $request->status ?? $pka->status,
-                'tgl_mulai' => $request->tgl_mulai,
-                'tgl_selesai' => $request->tgl_selesai,
-            ]);
-
-            // Sync langkah: keep existing with ID, create new, delete removed
-            $existingIds = [];
-
-            if ($request->langkah) {
-                foreach ($request->langkah as $index => $langkahData) {
-                    if (!empty($langkahData['judul'])) {
-                        if (!empty($langkahData['id'])) {
-                            // Update existing
-                            $langkah = PkLangkah::find($langkahData['id']);
-                            if ($langkah && $langkah->program_kerja_id == $pka->id) {
-                                $langkah->update([
-                                    'urutan' => $index + 1,
-                                    'judul' => $langkahData['judul'],
-                                    'deskripsi' => $langkahData['deskripsi'] ?? null,
-                                    'jenis_prosedur' => $langkahData['jenis_prosedur'] ?? null,
-                                    'target_hari' => $langkahData['target_hari'] ?? null,
-                                ]);
-                                $existingIds[] = $langkah->id;
-                            }
-                        } else {
-                            // Create new
-                            $newLangkah = PkLangkah::create([
-                                'program_kerja_id' => $pka->id,
-                                'urutan' => $index + 1,
-                                'judul' => $langkahData['judul'],
-                                'deskripsi' => $langkahData['deskripsi'] ?? null,
-                                'jenis_prosedur' => $langkahData['jenis_prosedur'] ?? null,
-                                'target_hari' => $langkahData['target_hari'] ?? null,
-                            ]);
-                            $existingIds[] = $newLangkah->id;
-                        }
-                    }
-                }
-            }
-
-            // Delete removed langkah (only non-template, without assignments or KK links)
-            PkLangkah::where('program_kerja_id', $pka->id)
-                ->whereNotIn('id', $existingIds)
-                ->where('from_template', false) // Protect template langkah
-                ->whereDoesntHave('assignments')
-                ->whereNull('kertas_kerja_id')
-                ->delete();
-        });
+        $pka->update([
+            'st_id' => $request->st_id,
+            'judul' => $request->judul,
+            'deskripsi' => $request->deskripsi,
+            'tujuan' => $request->tujuan,
+            'ruang_lingkup' => $request->ruang_lingkup,
+            'metodologi' => $request->metodologi,
+            'status' => $request->status ?? $pka->status,
+            'tgl_mulai' => $request->tgl_mulai,
+            'tgl_selesai' => $request->tgl_selesai,
+        ]);
 
         return redirect()->route('program-kerja.show', $pka->id)
             ->with('success', 'Program Kerja berhasil diperbarui!');
@@ -300,6 +281,64 @@ class ProgramKerjaController extends Controller
 
         return redirect()->route('program-kerja.index')
             ->with('success', 'Program Kerja berhasil dihapus!');
+    }
+
+    /**
+     * Store new Langkah for a PKA.
+     */
+    public function storeLangkah(Request $request, $id)
+    {
+        $pka = ProgramKerja::findOrFail($id);
+        $this->authorizeAccess($pka);
+
+        $request->validate([
+            'judul' => 'required|string|max:255',
+            'deskripsi' => 'nullable|string',
+            'jenis_prosedur' => 'nullable|string',
+            'target_hari' => 'nullable|integer|min:1',
+            'template_indicator_id' => 'nullable|exists:template_indicators,id',
+        ]);
+
+        $maxUrutan = PkLangkah::where('program_kerja_id', $pka->id)
+            ->where('template_indicator_id', $request->template_indicator_id)
+            ->max('urutan') ?? 0;
+
+        PkLangkah::create([
+            'program_kerja_id' => $pka->id,
+            'urutan' => $maxUrutan + 1,
+            'judul' => $request->judul,
+            'deskripsi' => $request->deskripsi,
+            'jenis_prosedur' => $request->jenis_prosedur,
+            'target_hari' => $request->target_hari,
+            'template_indicator_id' => $request->template_indicator_id,
+            'from_template' => false,
+        ]);
+
+        return redirect()->route('program-kerja.show', $pka->id)
+            ->with('success', 'Langkah Kerja berhasil ditambahkan!');
+    }
+
+    /**
+     * Delete a Langkah.
+     */
+    public function destroyLangkah($id)
+    {
+        $langkah = PkLangkah::with('programKerja')->findOrFail($id);
+        $pka = $langkah->programKerja;
+        $this->authorizeAccess($pka);
+
+        if ($langkah->assignments()->count() > 0) {
+            return back()->with('error', 'Langkah tidak dapat dihapus karena sudah memiliki penugasan.');
+        }
+
+        if ($langkah->kertas_kerja_id) {
+            return back()->with('error', 'Langkah tidak dapat dihapus karena sudah dihubungkan dengan Kertas Kerja.');
+        }
+
+        $langkah->delete();
+
+        return redirect()->route('program-kerja.show', $pka->id)
+            ->with('success', 'Langkah Kerja berhasil dihapus!');
     }
 
     /**
@@ -346,6 +385,68 @@ class ProgramKerjaController extends Controller
     }
 
     /**
+     * Assign semua langkah dalam satu parameter ke anggota tim.
+     */
+    public function bulkAssignLangkah(Request $request)
+    {
+        $request->validate([
+            'program_kerja_id' => 'required|exists:program_kerja,id',
+            'parameter_id' => 'required|exists:template_indicators,id',
+            'user_id' => 'required|exists:users,id',
+        ]);
+
+        $pka = ProgramKerja::with('suratTugas')->findOrFail($request->program_kerja_id);
+
+        // Verify user is part of the team
+        $isTeamMember = StPersonel::where('st_id', $pka->st_id)
+            ->where('user_id', $request->user_id)
+            ->exists();
+
+        if (!$isTeamMember) {
+            return response()->json(['success' => false, 'message' => 'User bukan anggota tim ST ini.'], 422);
+        }
+
+        // Get all langkah work within this parameter
+        $langkahs = PkLangkah::where('program_kerja_id', $pka->id)
+            ->where('template_indicator_id', $request->parameter_id)
+            ->get();
+
+        if ($langkahs->isEmpty()) {
+            return response()->json(['success' => false, 'message' => 'Tidak ada langkah kerja di parameter ini.'], 404);
+        }
+
+        DB::beginTransaction();
+        try {
+            foreach ($langkahs as $langkah) {
+                // If the langkah is already assigned to this user, skip or update. 
+                // Using updateOrCreate ensures they own it.
+                // Note: the current system architecture allows multiple assignments per langkah, 
+                // but usually it's one person per step. We will just add the assignment for this user.
+                
+                // First delete existing assignments for this step to avoid duplicates if 
+                // we only want 1 assignee per step as standard practice in bulk
+                PkAssignment::where('pk_langkah_id', $langkah->id)->delete();
+
+                PkAssignment::create([
+                    'pk_langkah_id' => $langkah->id,
+                    'user_id' => $request->user_id,
+                    'assigned_by' => auth()->id(),
+                    'status' => 'assigned',
+                ]);
+            }
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Seluruh langkah pada parameter tersebut berhasil ditugaskan!',
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Terjadi kesalahan sistem.'], 500);
+        }
+    }
+
+    /**
      * Update status langkah.
      */
     public function updateStatus(Request $request, $id)
@@ -384,28 +485,7 @@ class ProgramKerjaController extends Controller
         ]);
     }
 
-    /**
-     * Link langkah ke Kertas Kerja.
-     */
-    public function linkKertasKerja(Request $request, $id)
-    {
-        $request->validate([
-            'kertas_kerja_id' => 'nullable|exists:kertas_kerja,id',
-        ]);
 
-        $langkah = PkLangkah::findOrFail($id);
-
-        $langkah->update([
-            'kertas_kerja_id' => $request->kertas_kerja_id,
-        ]);
-
-        return response()->json([
-            'success' => true,
-            'message' => $request->kertas_kerja_id
-                ? 'Langkah berhasil dihubungkan dengan Kertas Kerja!'
-                : 'Link Kertas Kerja berhasil dihapus.',
-        ]);
-    }
 
     /**
      * Remove assignment.
@@ -491,6 +571,7 @@ class ProgramKerjaController extends Controller
                 'deskripsi' => $langkah->deskripsi,
                 'jenis_prosedur' => $langkah->jenis_prosedur,
                 'target_hari' => $langkah->target_hari,
+                'kk_template_id' => $langkah->kk_template_id,
                 'status' => 'pending',
                 'from_template' => true,
             ]);

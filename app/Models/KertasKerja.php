@@ -50,6 +50,11 @@ class KertasKerja extends Model
         return $this->hasMany(ReviewNote::class, 'kk_id');
     }
 
+    public function audits()
+    {
+        return $this->hasMany(KertasKerjaAudit::class, 'kertas_kerja_id');
+    }
+
     public function langkahProgramKerja()
     {
         return $this->hasMany(PkLangkah::class, 'kertas_kerja_id');

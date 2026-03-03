@@ -3,6 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+use App\Exports\KertasKerjaExport;
+use App\Imports\KertasKerjaImport;
+use Maatwebsite\Excel\Facades\Excel;
 
 class KertasKerjaController extends Controller
 {
@@ -92,7 +95,7 @@ class KertasKerjaController extends Controller
             str_starts_with($kertasKerja->status_approval, 'Revisi') || 
             $kertasKerja->status_approval == 'Review Ketua') {
             
-            if ($isCreator || $isKetua) $canEdit = true;
+            if ($isCreator || $isKetua || str_contains(strtolower($roleInTeam), 'anggota')) $canEdit = true;
         }
         // 2. Posisi Dalnis
         elseif ($kertasKerja->status_approval == 'Review Dalnis') {
@@ -121,8 +124,8 @@ class KertasKerjaController extends Controller
     $indicators = \App\Models\TemplateIndicator::where('template_id', $kertasKerja->template_id)
         ->whereNull('parent_id')
         ->with(['children' => function($q) {
-            $q->orderBy('id')->with(['criteria', 'children' => function($q2) {
-                $q2->orderBy('id')->with('criteria');
+            $q->orderBy('id')->with(['criteria', 'langkahs', 'children' => function($q2) {
+                $q2->orderBy('id')->with(['criteria', 'langkahs']);
             }]);
         }])
         ->orderBy('id')
@@ -152,7 +155,7 @@ class KertasKerjaController extends Controller
              if ($kertasKerja->status_approval == 'Draft' || 
                 str_starts_with($kertasKerja->status_approval, 'Revisi') || 
                 $kertasKerja->status_approval == 'Review Ketua') {
-                if ($isCreator || $isKetua) $canEdit = true;
+                if ($isCreator || $isKetua || str_contains(strtolower($roleInTeam), 'anggota')) $canEdit = true;
             }
             elseif ($kertasKerja->status_approval == 'Review Dalnis') {
                 $roleInTeam = \App\Models\StPersonel::where('st_id', $kertasKerja->st_id)
@@ -298,6 +301,13 @@ class KertasKerjaController extends Controller
         // Recalculate Hierarchy Rollup
         $this->calculateMrRollup($kertasKerja);
 
+        \App\Models\KertasKerjaAudit::create([
+            'kertas_kerja_id' => $kertasKerja->id,
+            'user_id' => $user->id,
+            'action' => 'Simpan',
+            'description' => 'Menyimpan/memperbarui data secara massal.',
+        ]);
+
         return redirect()->route('kertas-kerja.index')
             ->with('success', 'Kertas Kerja berhasil disimpan!');
     }
@@ -323,6 +333,13 @@ class KertasKerjaController extends Controller
         if ($roleInTeam == 'Ketua Tim') {
             // Ketua Tim skips 'Review Ketua' and goes straight to 'Review Dalnis'
             $kk->update(['status_approval' => 'Review Dalnis']);
+
+            \App\Models\KertasKerjaAudit::create([
+                'kertas_kerja_id' => $kk->id,
+                'user_id' => $user->id,
+                'action' => 'Kirim',
+                'description' => 'Kertas kerja dikirim langsung ke Dalnis oleh Ketua Tim.',
+            ]);
             
             // Notify Dalnis
             $dalnis = \App\Models\StPersonel::where('st_id', $kk->st_id)
@@ -336,6 +353,13 @@ class KertasKerjaController extends Controller
         } else {
             // Anggota submits to Ketua
             $kk->update(['status_approval' => 'Review Ketua']);
+
+            \App\Models\KertasKerjaAudit::create([
+                'kertas_kerja_id' => $kk->id,
+                'user_id' => $user->id,
+                'action' => 'Kirim',
+                'description' => 'Kertas kerja dikirim ke Ketua Tim.',
+            ]);
 
             // Notify Ketua Tim
             $ketua = \App\Models\StPersonel::where('st_id', $kk->st_id)
@@ -375,6 +399,13 @@ class KertasKerjaController extends Controller
                 'status' => 'Approved',
             ]);
 
+            \App\Models\KertasKerjaAudit::create([
+                'kertas_kerja_id' => $kk->id,
+                'user_id' => $user->id,
+                'action' => 'Setuju',
+                'description' => 'Disetujui Ketua Tim. Lanjut ke Dalnis.',
+            ]);
+
             // Notify Dalnis
             $dalnis = \App\Models\StPersonel::where('st_id', $kk->st_id)
                 ->where('role_dalam_tim', 'Dalnis')
@@ -398,6 +429,13 @@ class KertasKerjaController extends Controller
                 'reviewer_id' => $user->id,
                 'catatan' => 'Kertas kerja disetujui oleh Dalnis.',
                 'status' => 'Approved',
+            ]);
+
+            \App\Models\KertasKerjaAudit::create([
+                'kertas_kerja_id' => $kk->id,
+                'user_id' => $user->id,
+                'action' => 'Setuju',
+                'description' => 'Disetujui Dalnis. Lanjut ke Korwas.',
             ]);
 
             // Notify Korwas
@@ -425,7 +463,40 @@ class KertasKerjaController extends Controller
                 'status' => 'Approved',
             ]);
 
+            \App\Models\KertasKerjaAudit::create([
+                'kertas_kerja_id' => $kk->id,
+                'user_id' => $user->id,
+                'action' => 'Setuju',
+                'description' => 'Disetujui Korwas. Status dokumen menjadi Final.',
+            ]);
+
+            // Sync with PKA Langkah for this ST
+            $pkaList = \App\Models\ProgramKerja::where('st_id', $kk->st_id)->get();
+            foreach ($pkaList as $pka) {
+                $langkahList = \App\Models\PkLangkah::where('program_kerja_id', $pka->id)->get();
+                foreach ($langkahList as $langkah) {
+                    if ($langkah->status !== 'completed') {
+                        $langkah->update([
+                            'status' => 'completed',
+                            'tgl_selesai' => now(),
+                            'catatan_hasil' => 'Kertas Kerja telah disetujui (Final).'
+                        ]);
+                        
+                        // Update assignments status
+                        \App\Models\PkAssignment::where('pk_langkah_id', $langkah->id)
+                            ->update(['status' => 'completed']);
+                    }
+                }
+                
+                // Auto-complete PKA
+                $allCompleted = $pka->langkah()->whereNotIn('status', ['completed', 'skipped'])->count() === 0;
+                if ($allCompleted && $pka->langkah()->count() > 0) {
+                    $pka->update(['status' => 'completed']);
+                }
+            }
+
             return back()->with('success', 'Disetujui. Kertas Kerja Final.');
+
         }
 
         return back()->with('error', 'Status tidak valid untuk persetujuan.');
@@ -483,6 +554,13 @@ class KertasKerjaController extends Controller
                 'reviewer_id' => $user->id,
                 'catatan' => $reason,
                 'status' => 'Pending',
+            ]);
+
+            \App\Models\KertasKerjaAudit::create([
+                'kertas_kerja_id' => $kk->id,
+                'user_id' => $user->id,
+                'action' => 'Tolak',
+                'description' => "Dokumen dikembalikan statusnya ke $newStatus. Catatan: $reason",
             ]);
 
             // Notify recipients
@@ -687,6 +765,51 @@ class KertasKerjaController extends Controller
         return round($totalScore, 2);
     }
 
+    public function exportExcel($id)
+    {
+        $kk = \App\Models\KertasKerja::findOrFail($id);
+        $fileName = 'Kertas_Kerja_' . str_replace(' ', '_', $kk->judul_kk) . '.xlsx';
+
+        \App\Models\KertasKerjaAudit::create([
+            'kertas_kerja_id' => $kk->id,
+            'user_id' => auth()->id(),
+            'action' => 'Export',
+            'description' => 'Mengekspor Kertas Kerja ke Excel.',
+        ]);
+
+        return Excel::download(new KertasKerjaExport($id), $fileName);
+    }
+
+    public function importExcel(Request $request, $id)
+    {
+        $request->validate([
+            'file_excel' => 'required|mimes:xlsx,xls'
+        ]);
+
+        $kk = \App\Models\KertasKerja::findOrFail($id);
+
+        \DB::beginTransaction();
+        try {
+            Excel::import(new KertasKerjaImport($id), $request->file('file_excel'));
+
+            // Recalculate rollup
+            $this->calculateMrRollup($kk);
+
+            \App\Models\KertasKerjaAudit::create([
+                'kertas_kerja_id' => $kk->id,
+                'user_id' => auth()->id(),
+                'action' => 'Import',
+                'description' => 'Mengimpor data Kertas Kerja dari Excel.',
+            ]);
+
+            \DB::commit();
+            return back()->with('success', 'Data Kertas Kerja berhasil diimpor dari Excel!');
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            return back()->with('error', 'Gagal mengimpor data: ' . $e->getMessage());
+        }
+    }
+
     public function fetchReference(Request $request)
     {
         $request->validate([
@@ -740,6 +863,7 @@ class KertasKerjaController extends Controller
         $isCreator = $kk->user_id == $user->id;
         $isKetua = $roleInTeam == 'Ketua Tim';
         $isSuperadmin = $user->hasRole('Superadmin');
+        $isRendal = $user->hasRole('Rendal') || $user->hasRole('Admin Perwakilan');
 
         $canEdit = false;
         $isMemberOfTeam = \App\Models\StPersonel::where('st_id', $kk->st_id)
@@ -754,16 +878,16 @@ class KertasKerjaController extends Controller
             // TIERED PERMISSION LOGIC
             // 1. Posisi Ketua Tim (Draft / Revisi / Review Ketua)
             //    - Anggota (Creator) AND Ketua Tim can edit.
-            if ($kertasKerja->status_approval == 'Draft' || 
-                str_starts_with($kertasKerja->status_approval, 'Revisi') || 
-                $kertasKerja->status_approval == 'Review Ketua') {
+            if ($kk->status_approval == 'Draft' || 
+                str_starts_with($kk->status_approval, 'Revisi') || 
+                $kk->status_approval == 'Review Ketua') {
                 
-                if ($isCreator || $isKetua) $canEdit = true;
+                if ($isCreator || $isKetua || str_contains(strtolower($roleInTeam), 'anggota')) $canEdit = true;
             }
             // 2. Posisi Dalnis (Review Dalnis)
             //    - Only Dalnis can edit.
-            elseif ($kertasKerja->status_approval == 'Review Dalnis') {
-                $roleInTeam = \App\Models\StPersonel::where('st_id', $kertasKerja->st_id)
+            elseif ($kk->status_approval == 'Review Dalnis') {
+                $roleInTeam = \App\Models\StPersonel::where('st_id', $kk->st_id)
                     ->where('user_id', $user->id) 
                     ->value('role_dalam_tim');
                 
@@ -771,8 +895,8 @@ class KertasKerjaController extends Controller
             }
             // 3. Posisi Korwas (Review Korwas)
             //    - Only Korwas can edit.
-            elseif ($kertasKerja->status_approval == 'Review Korwas') {
-                $roleInTeam = \App\Models\StPersonel::where('st_id', $kertasKerja->st_id)
+            elseif ($kk->status_approval == 'Review Korwas') {
+                $roleInTeam = \App\Models\StPersonel::where('st_id', $kk->st_id)
                     ->where('user_id', $user->id) 
                     ->value('role_dalam_tim');
 
@@ -867,6 +991,19 @@ class KertasKerjaController extends Controller
         $paramScoreFormatted = $metode === 'tally'
             ? number_format($newParamScore, 0)
             : number_format($newParamScore, 2);
+        
+        $finalScore = $kk->nilai_akhir; // Assuming nilai_akhir is updated by calculateMrRollup
+
+        $kk->update([
+            'nilai_akhir' => $finalScore
+        ]);
+
+        \App\Models\KertasKerjaAudit::create([
+            'kertas_kerja_id' => $kk->id,
+            'user_id' => $user->id,
+            'action' => 'Simpan',
+            'description' => 'Mengubah satu item penilaian kriteria/indikator secara spesifik.',
+        ]);
 
         return response()->json([
             'success' => true,

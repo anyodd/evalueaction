@@ -25,8 +25,8 @@ class SuratTugasController extends Controller
             $q->where('name', '!=', 'Admin Perwakilan');
         });
         
-        // Scope users for Admin Perwakilan
-        if (auth()->user()->role && auth()->user()->role->name === 'Admin Perwakilan') {
+        // Scope users for Perwakilan level roles
+        if (auth()->user()->role && !in_array(auth()->user()->role->name, ['Superadmin', 'Rendal'])) {
             $user_query->where('perwakilan_id', auth()->user()->perwakilan_id);
         }
 
@@ -98,7 +98,8 @@ class SuratTugasController extends Controller
             $q->where('name', '!=', 'Admin Perwakilan');
         });
 
-        if (auth()->user()->role && auth()->user()->role->name === 'Admin Perwakilan') {
+        // Scope users for Perwakilan level roles
+        if (auth()->user()->role && !in_array(auth()->user()->role->name, ['Superadmin', 'Rendal'])) {
             $user_query->where('perwakilan_id', auth()->user()->perwakilan_id);
         }
         $users = $user_query->orderBy('name')->get();

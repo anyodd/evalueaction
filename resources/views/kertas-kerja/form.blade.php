@@ -14,9 +14,14 @@
         <div class="d-flex justify-content-between align-items-center">
             <small class="text-muted">{{ $kertasKerja->judul_kk }}</small>
             <div class="d-flex align-items-center">
-                <a href="{{ route('kertas-kerja.review-sheet', $kertasKerja->id) }}" class="btn btn-outline-navy btn-sm shadow-sm mr-2" target="_blank">
-                    <i class="fas fa-print mr-1"></i> Lembar Review
+                <a href="{{ route('kertas-kerja.export-excel', $kertasKerja->id) }}" class="btn btn-outline-success btn-sm shadow-sm mr-2">
+                    <i class="fas fa-file-excel mr-1"></i> Export Excel
                 </a>
+                @if($canEdit)
+                    <button type="button" class="btn btn-outline-primary btn-sm shadow-sm mr-2" data-toggle="modal" data-target="#modal-import-excel">
+                        <i class="fas fa-file-import mr-1"></i> Import Excel
+                    </button>
+                @endif
                 <a href="{{ route('kertas-kerja.index') }}" class="btn btn-default btn-sm shadow-sm">
                     <i class="fas fa-arrow-left mr-1"></i> Kembali ke Daftar
                 </a>
@@ -143,6 +148,54 @@
                 </div>
             </div>
         </form>
+
+        {{-- Jejak Rekam (Audit Trail) --}}
+        <div class="card shadow-sm border-0 mt-4" style="border-radius: 15px;">
+            <div class="card-header bg-white border-bottom-0 pt-4 pb-0">
+                <h5 class="card-title font-weight-bold text-dark m-0">
+                    <i class="fas fa-history text-muted mr-2"></i> Jejak Rekam (Audit Trail)
+                </h5>
+            </div>
+            <div class="card-body">
+                @if($kertasKerja->audits && $kertasKerja->audits->count() > 0)
+                    <div class="timeline mt-3">
+                        @foreach($kertasKerja->audits->sortByDesc('created_at') as $audit)
+                            <div>
+                                @php
+                                    $iconClass = 'fas fa-info-circle bg-secondary';
+                                    if(strtolower($audit->action) == 'simpan') $iconClass = 'fas fa-save bg-primary';
+                                    if(strtolower($audit->action) == 'kirim') $iconClass = 'fas fa-paper-plane bg-info';
+                                    if(strtolower($audit->action) == 'setuju') $iconClass = 'fas fa-check bg-success';
+                                    if(strtolower($audit->action) == 'tolak') $iconClass = 'fas fa-times bg-danger';
+                                @endphp
+                                <i class="{{ $iconClass }}"></i>
+                                <div class="timeline-item shadow-sm" style="border-radius: 8px;">
+                                    <span class="time"><i class="fas fa-clock mr-1"></i> {{ $audit->created_at->format('d M Y H:i') }}</span>
+                                    <h3 class="timeline-header font-weight-bold" style="font-size: 0.95rem;">
+                                        {{ $audit->user ? $audit->user->name : 'Sistem' }} 
+                                        <span class="text-muted font-weight-normal">mengubah status / skor</span>
+                                        <span class="badge badge-light border ml-1">{{ $audit->action }}</span>
+                                    </h3>
+                                    @if($audit->description)
+                                        <div class="timeline-body py-2 text-muted" style="font-size: 0.9rem;">
+                                            {{ $audit->description }}
+                                        </div>
+                                    @endif
+                                </div>
+                            </div>
+                        @endforeach
+                        <div>
+                            <i class="fas fa-clock bg-gray"></i>
+                        </div>
+                    </div>
+                @else
+                    <div class="alert alert-light border text-center text-muted col-12 py-4">
+                        <i class="fas fa-inbox fa-2x mb-2 text-light-gray"></i><br>
+                        Belum ada jejak rekam (Audit Trail) untuk dokumen ini.
+                    </div>
+                @endif
+            </div>
+        </div>
     </div>
 
     {{-- Hidden Form for Finalize QA --}}
@@ -150,7 +203,54 @@
         @csrf
     </form>
 
-    @section('js')
+    {{-- Modal Import Excel --}}
+    @if($canEdit)
+        <div class="modal fade" id="modal-import-excel" tabindex="-1" role="dialog" aria-labelledby="modalImportLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <form action="{{ route('kertas-kerja.import-excel', $kertasKerja->id) }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <div class="modal-content" style="border-radius: 15px;">
+                        <div class="modal-header border-0">
+                            <h5 class="modal-title font-weight-bold" id="modalImportLabel">Import Kertas Kerja dari Excel</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-info py-2" style="font-size: 0.9rem;">
+                                <i class="fas fa-info-circle mr-2"></i> 
+                                Gunakan file hasil <strong>Export Excel</strong> untuk memastikan format dan ID indikator sudah sesuai.
+                            </div>
+                            <div class="form-group mt-3">
+                                <label for="file_excel">Pilih File Excel (.xlsx, .xls)</label>
+                                <div class="custom-file">
+                                    <input type="file" class="custom-file-input" id="file_excel" name="file_excel" accept=".xlsx, .xls" required>
+                                    <label class="custom-file-label" for="file_excel">Pilih file...</label>
+                                </div>
+                            </div>
+                            <p class="text-xs text-muted mt-2">
+                                <span class="text-danger">*</span> Sistem akan memperbarui nilai, catatan, dan link bukti berdasarkan ID unik di kolom pertama Excel.
+                            </p>
+                        </div>
+                        <div class="modal-footer border-0">
+                            <button type="button" class="btn btn-light rounded-pill px-4" data-dismiss="modal">Batal</button>
+                            <button type="submit" class="btn btn-primary rounded-pill px-4">
+                                <i class="fas fa-upload mr-2"></i> Mulai Import
+                            </button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endif
+@stop
+
+@section('css')
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+@stop
+
+@section('js')
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script>
         $(document).ready(function() {
             $('.btn-finalize-qa').click(function(e) {
@@ -170,21 +270,7 @@
                     }
                 });
             });
-        });
-    </script>
-    @endsection
-        @csrf
-    </form>
-@stop
 
-@section('css')
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
-@stop
-
-@section('js')
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
-    <script>
-        $(document).ready(function() {
             // Criteria Radio Logic
             $(document).on('change', '.criteria-radio', function() {
                 let val = $(this).val();
@@ -496,6 +582,12 @@
                         btn.html(originalText).prop('disabled', false);
                     }
                 });
+            });
+
+            // Custom file input label
+            $('.custom-file-input').on('change', function() {
+                let fileName = $(this).val().split('\\').pop();
+                $(this).next('.custom-file-label').addClass("selected").html(fileName);
             });
 
         });

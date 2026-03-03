@@ -82,8 +82,8 @@
                                 <table class="table table-borderless" id="personel-table">
                                     <thead>
                                         <tr class="text-muted small text-uppercase">
-                                            <th>Personel</th>
-                                            <th>Peran Dalam Tim</th>
+                                            <th style="width: 60%;">Personel</th>
+                                            <th style="min-width: 150px;">Peran Dalam Tim</th>
                                             <th style="width: 50px"></th>
                                         </tr>
                                     </thead>
@@ -99,7 +99,7 @@
                                                 </select>
                                             </td>
                                             <td>
-                                                <select name="peran[]" class="form-control rounded-pill" required>
+                                                <select name="peran[]" class="form-control select2 rounded-pill peran-select" required>
                                                     <option value="Korwas">Korwas</option>
                                                     <option value="Dalnis">Dalnis</option>
                                                     <option value="Ketua Tim">Ketua Tim</option>
@@ -132,19 +132,28 @@
 @section('js')
 <script>
     $(document).ready(function() {
+        // Initial setup for Select2 if not already initialized
+        $('.personel-select').select2({ theme: 'bootstrap4' });
+        $('.peran-select').select2({ theme: 'bootstrap4', minimumResultsForSearch: Infinity });
+
         // Function to add new row
         $('#add-personel').click(function() {
             let row = $('.personel-row').first().clone();
-            row.find('select').val('');
-            row.find('.select2-container').remove(); // Remove select2 duplicate
-            row.find('select').removeClass('select2-hidden-accessible');
-            row.find('select').removeAttr('data-select2-id');
+            
+            // Un-init select2 on clone
+            row.find('.select2-container').remove(); 
+            row.find('select').removeClass('select2-hidden-accessible').removeAttr('data-select2-id');
             row.find('option').removeAttr('data-select2-id');
+            
+            // Clear selections
+            row.find('.personel-select').val('');
+            row.find('.peran-select').val('Anggota');
             
             $('#personel-container').append(row);
             
-            // Init select2 for new row
+            // Re-init select2 for the new elements
             row.find('.personel-select').select2({ theme: 'bootstrap4' });
+            row.find('.peran-select').select2({ theme: 'bootstrap4', minimumResultsForSearch: Infinity });
         });
 
         // Function to remove row
@@ -155,9 +164,6 @@
                 alert('Minimal harus ada 1 personel dalam tim.');
             }
         });
-
-        // Initial setup for Select2 if not already initialized
-        // $('.personel-select').select2({ theme: 'bootstrap4' });
     });
 </script>
 @stop

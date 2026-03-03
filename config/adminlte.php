@@ -164,6 +164,12 @@ return [
             'icon'        => 'fas fa-fw fa-chart-line',
             'can'         => ['rendal', 'superadmin', 'admin-perwakilan', 'korwas', 'dalnis', 'ketua-tim', 'anggota'],
         ],
+        [
+            'text'        => 'Jejak Rekam',
+            'url'         => 'audit-trail',
+            'icon'        => 'fas fa-fw fa-history',
+            'can'         => ['superadmin', 'rendal'],
+        ],
         ['header' => 'MANAJEMEN SYSTEM', 'can' => ['superadmin', 'admin-perwakilan']],
         [
             'text'        => 'Manajemen Users',
@@ -187,9 +193,9 @@ return [
                     'icon' => 'fas fa-fw fa-user-tag',
                 ],
                 [
-                    'text' => 'Template Program Kerja',
-                    'url'  => 'template-pka',
-                    'icon' => 'fas fa-fw fa-clipboard-list',
+                    'text' => 'Jenis Penugasan',
+                    'url'  => 'jenis-penugasan',
+                    'icon' => 'fas fa-fw fa-tags',
                 ],
                 [
                     'text' => 'Template Kertas Kerja',

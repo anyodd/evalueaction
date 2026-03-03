@@ -44,6 +44,14 @@
             <a href="{{ route('kertas-kerja.edit', $langkah->kertas_kerja_id) }}" class="badge badge-primary p-1" target="_blank">
                 <i class="fas fa-external-link-alt mr-1"></i>{{ Str::limit($langkah->kertasKerja->judul_kk, 20) }}
             </a>
+        @elseif($langkah->kk_template_id)
+            <form action="{{ route('program-kerja.generate-kk', $langkah->id) }}" method="POST" class="d-inline">
+                @csrf
+                <button type="submit" class="btn btn-xs btn-outline-success border-0 shadow-sm" title="Generate Kertas Kerja dari Template" onclick="return confirm('Generate Kertas Kerja untuk langkah ini?')">
+                    <i class="fas fa-magic mr-1"></i>Buat KK
+                </button>
+            </form>
+            <br><small class="text-info" style="font-size: 0.65rem;">Dari: {{ Str::limit($langkah->kkTemplate->nama ?? 'Template', 15) }}</small>
         @else
             <small class="text-muted">-</small>
         @endif

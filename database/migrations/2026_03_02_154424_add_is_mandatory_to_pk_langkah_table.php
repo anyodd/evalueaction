@@ -4,7 +4,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-class AddFileLaporanToKertasKerja extends Migration
+class AddIsMandatoryToPkLangkahTable extends Migration
 {
     /**
      * Run the migrations.
@@ -13,8 +13,8 @@ class AddFileLaporanToKertasKerja extends Migration
      */
     public function up()
     {
-        Schema::table('kertas_kerja', function (Blueprint $table) {
-            $table->string('file_laporan')->nullable()->after('status_qa');
+        Schema::table('pk_langkah', function (Blueprint $table) {
+            $table->boolean('is_mandatory')->default(false)->after('from_template');
         });
     }
 
@@ -25,8 +25,8 @@ class AddFileLaporanToKertasKerja extends Migration
      */
     public function down()
     {
-        Schema::table('kertas_kerja', function (Blueprint $table) {
-            $table->dropColumn('file_laporan');
+        Schema::table('pk_langkah', function (Blueprint $table) {
+            $table->dropColumn('is_mandatory');
         });
     }
 }

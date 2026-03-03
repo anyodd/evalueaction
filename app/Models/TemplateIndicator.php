@@ -29,4 +29,9 @@ class TemplateIndicator extends Model
     {
         return $this->hasMany(TemplateCriteria::class, 'indicator_id');
     }
+
+    public function langkahs()
+    {
+        return $this->hasMany(TemplateLangkah::class, 'indicator_id');
+    }
 }

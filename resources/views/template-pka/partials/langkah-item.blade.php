@@ -28,6 +28,11 @@
                         <i class="fas fa-clock mr-1"></i>{{ $langkah->target_hari }} hari
                     </span>
                 @endif
+                @if($langkah->kk_template_id && $langkah->kkTemplate)
+                    <span class="badge badge-info border ml-1" style="font-size: 0.7rem;" title="Terkoneksi ke Template Kertas Kerja">
+                        <i class="fas fa-link mr-1"></i>{{ $langkah->kkTemplate->nama }}
+                    </span>
+                @endif
                 @if($langkah->deskripsi)
                     <br><small class="text-muted">{{ \Illuminate\Support\Str::limit($langkah->deskripsi, 120) }}</small>
                 @endif

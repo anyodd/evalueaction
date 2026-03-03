@@ -67,12 +67,15 @@ class TemplatePKAController extends Controller
     public function show($id)
     {
         $template = ProgramKerja::whereNull('st_id')->findOrFail($id);
-        $langkahRoot = $template->langkahRoot()->with('children.children')->get();
+        $langkahRoot = $template->langkahRoot()->with(['children.children', 'kkTemplate', 'children.kkTemplate', 'children.children.kkTemplate'])->get();
 
         // Count stats
         $totalLangkah = $template->langkah()->count();
 
-        return view('template-pka.show', compact('template', 'langkahRoot', 'totalLangkah'));
+        // Add available KK templates
+        $kkTemplates = \App\Models\KkTemplate::where('is_active', true)->whereNull('jenis_penugasan_id')->orWhereHas('jenisPenugasan')->get();
+
+        return view('template-pka.show', compact('template', 'langkahRoot', 'totalLangkah', 'kkTemplates'));
     }
 
     /**
@@ -138,6 +141,7 @@ class TemplatePKAController extends Controller
             'jenis_prosedur' => 'nullable|string',
             'target_hari' => 'nullable|integer|min:1',
             'parent_id' => 'nullable|exists:pk_langkah,id',
+            'kk_template_id' => 'nullable|exists:kk_templates,id',
         ]);
 
         $maxUrutan = PkLangkah::where('program_kerja_id', $template->id)
@@ -152,6 +156,7 @@ class TemplatePKAController extends Controller
             'deskripsi' => $request->deskripsi,
             'jenis_prosedur' => $request->jenis_prosedur,
             'target_hari' => $request->target_hari,
+            'kk_template_id' => $request->kk_template_id,
             'status' => 'pending',
         ]);
 

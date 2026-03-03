@@ -95,6 +95,9 @@
                             <span class="editable-text badge badge-outline-primary ml-1" data-type="indicator" data-id="{{ $aspect->id }}" data-field="bobot" style="cursor:pointer;">{{ $aspect->bobot }}%</span>
                         </h3>
                         <div class="card-tools">
+                            <button type="button" class="btn btn-tool btn-sm text-info btn-edit-indicator" data-id="{{ $aspect->id }}" data-uraian="{{ $aspect->uraian }}" data-bobot="{{ $aspect->bobot }}" title="Edit Aspek">
+                                <i class="fas fa-edit"></i>
+                            </button>
                             <button type="button" class="btn btn-tool btn-sm" data-card-widget="collapse"><i class="fas fa-minus"></i></button>
                             <button type="button" class="btn btn-tool btn-sm text-danger btn-delete-indicator" data-id="{{ $aspect->id }}" title="Hapus Aspek">
                                 <i class="fas fa-trash"></i>
@@ -112,9 +115,14 @@
                                             <span class="font-weight-bold editable-text" style="font-size: 1rem;" data-type="indicator" data-id="{{ $indicator->id }}" data-field="uraian">{{ $indicator->uraian }}</span>
                                             <span class="badge badge-info ml-2 editable-text" data-type="indicator" data-id="{{ $indicator->id }}" data-field="bobot" style="cursor:pointer;">{{ $indicator->bobot }}%</span>
                                         </div>
-                                        <button type="button" class="btn btn-xs text-muted hover-danger btn-delete-indicator" data-id="{{ $indicator->id }}" title="Hapus Indikator">
-                                            <i class="fas fa-times"></i>
-                                        </button>
+                                        <div>
+                                            <button type="button" class="btn btn-xs text-info hover-info btn-edit-indicator mr-1" data-id="{{ $indicator->id }}" data-uraian="{{ $indicator->uraian }}" data-bobot="{{ $indicator->bobot }}" title="Edit Indikator">
+                                                <i class="fas fa-edit"></i>
+                                            </button>
+                                            <button type="button" class="btn btn-xs text-muted hover-danger btn-delete-indicator" data-id="{{ $indicator->id }}" title="Hapus Indikator">
+                                                <i class="fas fa-times"></i>
+                                            </button>
+                                        </div>
                                     </div>
 
                                     {{-- 3rd Level: Parameters --}}
@@ -127,45 +135,100 @@
                                                         <span class="editable-text" data-type="indicator" data-id="{{ $parameter->id }}" data-field="uraian">{{ $parameter->uraian }}</span>
                                                         <span class="editable-text badge badge-light border ml-1" data-type="indicator" data-id="{{ $parameter->id }}" data-field="bobot" style="cursor:pointer;">{{ $parameter->bobot }}%</span>
                                                     </span>
-                                                    <button type="button" class="btn btn-xs text-light-gray hover-danger btn-delete-indicator" data-id="{{ $parameter->id }}" title="Hapus Parameter">
-                                                        <i class="fas fa-times"></i>
-                                                    </button>
+                                                    <div>
+                                                        <button type="button" class="btn btn-xs text-info hover-info btn-edit-indicator mr-1" data-id="{{ $parameter->id }}" data-uraian="{{ $parameter->uraian }}" data-bobot="{{ $parameter->bobot }}" title="Edit Parameter">
+                                                            <i class="fas fa-edit"></i>
+                                                        </button>
+                                                        <button type="button" class="btn btn-xs text-light-gray hover-danger btn-delete-indicator" data-id="{{ $parameter->id }}" title="Hapus Parameter">
+                                                            <i class="fas fa-times"></i>
+                                                        </button>
+                                                    </div>
                                                 </div>
 
-                                                {{-- Criteria List --}}
-                                                <div class="mt-1 pl-4" id="criteria-list-{{ $parameter->id }}">
-                                                    <ul class="list-unstyled mb-1">
-                                                        @foreach($parameter->criteria->sortBy('level') as $criteria)
-                                                            <li class="text-muted text-sm d-flex align-items-center py-1 criteria-item" id="criteria-{{ $criteria->id }}">
-                                                                <i class="fas fa-check mr-2 text-success" style="font-size: 0.7rem;"></i>
-                                                                @if($isLevel && $criteria->level > 0)
-                                                                    <span class="badge badge-light border mr-1" style="font-size: 0.65rem;">Lv.{{ $criteria->level }}</span>
-                                                                @endif
-                                                                <span class="editable-text flex-grow-1" data-type="criteria" data-id="{{ $criteria->id }}" data-field="uraian">{{ $criteria->uraian }}</span>
+                                                <div class="row mt-2 pl-3">
+                                                    {{-- Criteria Column --}}
+                                                    <div class="col-lg-6 mb-3 pr-lg-3 border-right">
+                                                        <h6 class="text-xs font-weight-bold text-secondary mb-2 text-uppercase"><i class="fas fa-list-ul mr-1"></i> Kriteria Penilaian</h6>
+                                                        <div id="criteria-list-{{ $parameter->id }}">
+                                                            <ul class="list-unstyled mb-1">
+                                                                @foreach($parameter->criteria->sortBy('level') as $criteria)
+                                                                    <li class="text-muted text-sm d-flex align-items-start py-1 criteria-item" id="criteria-{{ $criteria->id }}">
+                                                                        <i class="fas fa-check mr-2 text-success" style="font-size: 0.7rem; margin-top: 0.35rem;"></i>
+                                                                        @if($isLevel && $criteria->level > 0)
+                                                                            <span class="badge badge-light border mr-2 mt-1" style="font-size: 0.65rem;">Lv.{{ $criteria->level }}</span>
+                                                                        @endif
+                                                                        <span class="editable-text flex-grow-1" data-type="criteria" data-id="{{ $criteria->id }}" data-field="uraian" style="white-space: pre-wrap; word-break: break-word;">{{ $criteria->uraian }}</span>
+                                                                        @if($isLevel)
+                                                                            <select class="form-control form-control-sm ml-1 criteria-level-select mt-1" data-id="{{ $criteria->id }}" style="max-width: 65px; height: 24px; font-size: 0.75rem; padding: 0 4px;">
+                                                                                @for($lv = 1; $lv <= 5; $lv++)
+                                                                                    <option value="{{ $lv }}" {{ $criteria->level == $lv ? 'selected' : '' }}>Lv.{{ $lv }}</option>
+                                                                                @endfor
+                                                                            </select>
+                                                                        @endif
+                                                                        <button type="button" class="btn btn-xs text-danger p-0 opacity-50 hover-opacity-100 btn-delete-criteria ml-2 mt-1" data-id="{{ $criteria->id }}" style="line-height:1">
+                                                                            <i class="fas fa-times"></i>
+                                                                        </button>
+                                                                    </li>
+                                                                @endforeach
+                                                            </ul>
+                                                            {{-- Add Criteria Form --}}
+                                                            <div class="d-flex align-items-start mt-2">
+                                                                <textarea class="form-control form-control-sm border-0 bg-light rounded px-2 py-1 criteria-input" placeholder="+ Kriteria (Ctrl+Enter utk simpan)" style="width: 100%; min-height: 40px; resize: vertical;" data-indicator="{{ $parameter->id }}"></textarea>
                                                                 @if($isLevel)
-                                                                    <select class="form-control form-control-sm ml-1 criteria-level-select" data-id="{{ $criteria->id }}" style="max-width: 65px; height: 24px; font-size: 0.75rem; padding: 0 4px;">
-                                                                        @for($lv = 1; $lv <= 5; $lv++)
-                                                                            <option value="{{ $lv }}" {{ $criteria->level == $lv ? 'selected' : '' }}>Lv.{{ $lv }}</option>
-                                                                        @endfor
-                                                                    </select>
+                                                                <select class="form-control form-control-sm ml-1 criteria-level-input mt-1" style="max-width: 70px; height: 30px;" data-indicator="{{ $parameter->id }}">
+                                                                    @for($lv = 1; $lv <= 5; $lv++)
+                                                                        <option value="{{ $lv }}">Lv.{{ $lv }}</option>
+                                                                    @endfor
+                                                                </select>
                                                                 @endif
-                                                                <button type="button" class="btn btn-xs text-danger p-0 opacity-50 hover-opacity-100 btn-delete-criteria ml-2" data-id="{{ $criteria->id }}" style="line-height:1">
-                                                                    <i class="fas fa-times"></i>
-                                                                </button>
-                                                            </li>
-                                                        @endforeach
-                                                    </ul>
-                                                    {{-- Add Criteria Form --}}
-                                                    <div class="d-flex align-items-center mt-1">
-                                                        <input type="text" class="form-control form-control-sm border-0 bg-light rounded px-2 criteria-input" placeholder="+ Kriteria..." style="max-width: 350px;" data-indicator="{{ $parameter->id }}">
-                                                        @if($isLevel)
-                                                        <select class="form-control form-control-sm ml-1 criteria-level-input" style="max-width: 70px;" data-indicator="{{ $parameter->id }}">
-                                                            @for($lv = 1; $lv <= 5; $lv++)
-                                                                <option value="{{ $lv }}">Lv.{{ $lv }}</option>
-                                                            @endfor
-                                                        </select>
-                                                        @endif
-                                                        <button type="button" class="btn btn-xs btn-light text-success ml-1 btn-add-criteria" data-indicator="{{ $parameter->id }}"><i class="fas fa-plus"></i></button>
+                                                                <button type="button" class="btn btn-xs btn-light text-success ml-1 mt-1 btn-add-criteria" data-indicator="{{ $parameter->id }}" title="Simpan Kriteria"><i class="fas fa-plus"></i></button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {{-- Langkah Kerja Column --}}
+                                                    <div class="col-lg-6 mb-3 pl-lg-3">
+                                                        <h6 class="text-xs font-weight-bold text-secondary mb-2 text-uppercase"><i class="fas fa-shoe-prints mr-1"></i> Langkah Kerja Standar</h6>
+                                                        <div id="langkah-list-{{ $parameter->id }}">
+                                                            <ul class="list-unstyled mb-1">
+                                                                @foreach($parameter->langkahs as $langkah)
+                                                                    <li class="text-muted text-sm d-flex align-items-start py-1 langkah-item" id="langkah-{{ $langkah->id }}">
+                                                                        <i class="fas fa-circle mr-2 text-primary" style="font-size: 0.4rem; margin-top: 0.5rem;"></i>
+                                                                        <span class="editable-text flex-grow-1" data-type="langkah" data-id="{{ $langkah->id }}" data-field="uraian" style="white-space: pre-wrap; word-break: break-word;">{{ $langkah->uraian }}</span>
+                                                                        <select class="form-control form-control-sm ml-1 langkah-jenis-select mt-1" data-id="{{ $langkah->id }}" style="max-width: 140px; height: 24px; font-size: 0.75rem; padding: 0 4px;">
+                                                                            <option value="" {{ !$langkah->jenis_prosedur ? 'selected' : '' }}>-- Jenis --</option>
+                                                                            <option value="wawancara" {{ $langkah->jenis_prosedur == 'wawancara' ? 'selected' : '' }}>Wawancara</option>
+                                                                            <option value="observasi" {{ $langkah->jenis_prosedur == 'observasi' ? 'selected' : '' }}>Observasi</option>
+                                                                            <option value="inspeksi_dokumen" {{ $langkah->jenis_prosedur == 'inspeksi_dokumen' ? 'selected' : '' }}>Inspeksi Dok.</option>
+                                                                            <option value="analisis_data" {{ $langkah->jenis_prosedur == 'analisis_data' ? 'selected' : '' }}>Analisis Data</option>
+                                                                            <option value="konfirmasi" {{ $langkah->jenis_prosedur == 'konfirmasi' ? 'selected' : '' }}>Konfirmasi</option>
+                                                                            <option value="rekalkulasi" {{ $langkah->jenis_prosedur == 'rekalkulasi' ? 'selected' : '' }}>Rekalkulasi</option>
+                                                                            <option value="kuesioner" {{ $langkah->jenis_prosedur == 'kuesioner' ? 'selected' : '' }}>Kuesioner</option>
+                                                                            <option value="lainnya" {{ $langkah->jenis_prosedur == 'lainnya' ? 'selected' : '' }}>Lainnya</option>
+                                                                        </select>
+                                                                        <button type="button" class="btn btn-xs text-danger p-0 opacity-50 hover-opacity-100 btn-delete-langkah ml-2 mt-1" data-id="{{ $langkah->id }}" style="line-height:1" title="Hapus Langkah">
+                                                                            <i class="fas fa-times"></i>
+                                                                        </button>
+                                                                    </li>
+                                                                @endforeach
+                                                            </ul>
+                                                            {{-- Add Langkah Form --}}
+                                                            <div class="d-flex align-items-start mt-2">
+                                                                <textarea class="form-control form-control-sm border-0 bg-light rounded px-2 py-1 langkah-input" placeholder="+ Langkah Kerja (Ctrl+Enter utk simpan)" style="width: 100%; min-height: 40px; resize: vertical;" data-indicator="{{ $parameter->id }}"></textarea>
+                                                                <select class="form-control form-control-sm ml-1 langkah-jenis-input mt-1" style="max-width: 140px; height: 30px; font-size: 0.8rem;" data-indicator="{{ $parameter->id }}">
+                                                                    <option value="">-- Jenis --</option>
+                                                                    <option value="wawancara">Wawancara</option>
+                                                                    <option value="observasi">Observasi</option>
+                                                                    <option value="inspeksi_dokumen">Inspeksi Dok.</option>
+                                                                    <option value="analisis_data">Analisis Data</option>
+                                                                    <option value="konfirmasi">Konfirmasi</option>
+                                                                    <option value="rekalkulasi">Rekalkulasi</option>
+                                                                    <option value="kuesioner">Kuesioner</option>
+                                                                    <option value="lainnya">Lainnya</option>
+                                                                </select>
+                                                                <button type="button" class="btn btn-xs btn-light text-primary ml-1 mt-1 btn-add-langkah btn-add-langkah-{{ $parameter->id }}" data-indicator="{{ $parameter->id }}" title="Simpan Langkah"><i class="fas fa-plus"></i></button>
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </div>
                                             </div>
@@ -235,6 +298,36 @@
             </form>
         </div>
     </div>
+
+    {{-- Modal Edit Indicator --}}
+    <div class="modal fade" id="editIndicatorModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-sm" role="document">
+            <form id="editIndicatorForm" method="POST">
+                @csrf
+                @method('PUT')
+                <div class="modal-content border-0 shadow-lg">
+                    <div class="modal-header bg-light py-2">
+                        <h6 class="modal-title font-weight-bold">Update Uraian / Bobot</h6>
+                        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group mb-2">
+                            <label class="text-sm">Uraian / Nama <span class="text-danger">*</span></label>
+                            <input type="text" name="uraian" id="editUraianField" class="form-control form-control-sm" required autofocus>
+                        </div>
+                        <div class="form-group mb-0">
+                            <label class="text-sm">Bobot (%)</label>
+                            <input type="number" name="bobot" id="editBobotField" class="form-control form-control-sm" step="0.01">
+                        </div>
+                    </div>
+                    <div class="modal-footer py-2 bg-light">
+                        <button type="button" class="btn btn-xs btn-secondary" data-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-xs btn-info px-3"><i class="fas fa-save mr-1"></i> Update</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
 @stop
 
 @section('js')
@@ -265,10 +358,58 @@ $(document).ready(function() {
         }
     });
 
+    // ─── Edit Indicator Modal ────────────────────────────────
+    $('#editIndicatorModal').appendTo("body");
+    $(document).on('click', '.btn-edit-indicator', function() {
+        var id = $(this).data('id');
+        var uraian = $(this).data('uraian');
+        var bobot = $(this).data('bobot');
+
+        $('#editUraianField').val(uraian);
+        $('#editBobotField').val(bobot);
+        $('#editIndicatorForm').attr('action', '/indicators/' + id);
+        $('#editIndicatorForm').data('id', id);
+        
+        $('#editIndicatorModal').modal('show');
+    });
+
+    $('#editIndicatorForm').on('submit', function(e) {
+        e.preventDefault();
+        var form = $(this);
+        var url = form.attr('action');
+        var id = form.data('id');
+        var btn = form.find('button[type="submit"]');
+        var newVal = $('#editUraianField').val();
+        var newBobot = $('#editBobotField').val();
+        var data = form.serialize();
+
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Menyimpan...');
+
+        $.ajax({
+            url: url,
+            type: 'POST', // Method overriding with _method=PUT is in form
+            data: data,
+            success: function(resp) {
+                if(resp.success) {
+                    $('#editIndicatorModal').modal('hide');
+                    toastr.success('Berhasil diupdate');
+                    // Refresh bobot summary if bobot changed, otherwise just update text
+                    location.reload(); 
+                }
+            },
+            error: function(xhr) {
+                toastr.error(xhr.responseJSON?.message || 'Gagal menyimpan perubahan');
+            },
+            complete: function() {
+                btn.prop('disabled', false).html('<i class="fas fa-save mr-1"></i> Update');
+            }
+        });
+    });
+
     // ─── Inline Edit (Double-click) ──────────────────────
     $(document).on('dblclick', '.editable-text', function() {
         var el = $(this);
-        if (el.find('input, select').length) return; // Already editing
+        if (el.find('input, select, textarea').length) return; // Already editing
 
         var type = el.data('type');
         var id = el.data('id');
@@ -280,24 +421,25 @@ $(document).ready(function() {
         if (isBobot) {
             input = $('<input type="number" step="0.01" class="form-control form-control-sm d-inline" style="width:80px;">').val(currentVal);
         } else {
-            input = $('<input type="text" class="form-control form-control-sm d-inline" style="width:300px;">').val(currentVal);
+            input = $('<textarea class="form-control form-control-sm d-inline" style="width:100%; resize:vertical; min-height: 48px;"></textarea>').val(currentVal);
         }
 
         el.data('original', el.html());
         el.html('').append(input);
-        input.focus().select();
+        input.focus();
+        
+        if (isBobot) input.select();
 
-        input.on('blur keydown', function(e) {
-            if (e.type === 'keydown' && e.key !== 'Enter') return;
-            e.preventDefault();
-
+        // Use blur for saving
+        input.on('blur', function() {
             var newVal = $(this).val();
             if (!newVal || newVal === currentVal) {
                 el.html(el.data('original'));
                 return;
             }
 
-            var url = type === 'indicator' ? '/indicators/' + id : '/criteria/' + id;
+            var url = type === 'indicator' ? '/indicators/' + id 
+                    : (type === 'langkah' ? '/template-langkah/' + id : '/criteria/' + id);
             var data = { _method: 'PUT' };
             data[field] = newVal;
             data['_token'] = '{{ csrf_token() }}';
@@ -310,11 +452,11 @@ $(document).ready(function() {
                     if (resp.success) {
                         if (isBobot) {
                             el.text(newVal + '%');
+                            location.reload(); // Refresh bobot summary
                         } else {
                             el.text(newVal);
                         }
                         toastr.success('Tersimpan');
-                        if (isBobot) location.reload(); // Refresh bobot summary
                     }
                 },
                 error: function() {
@@ -322,6 +464,15 @@ $(document).ready(function() {
                     toastr.error('Gagal menyimpan');
                 }
             });
+        });
+
+        // Use Escape to cancel
+        input.on('keydown', function(e) {
+            if (e.key === 'Escape') {
+                el.html(el.data('original'));
+            } else if (e.key === 'Enter' && isBobot) {
+                $(this).blur(); // Trigger save
+            }
         });
     });
 
@@ -360,35 +511,82 @@ $(document).ready(function() {
 
     // ─── AJAX Add Criteria ────────────────────────────────
     $(document).on('click', '.btn-add-criteria', function() {
-        var indicatorId = $(this).data('indicator');
-        var inputEl = $(this).siblings('.criteria-input');
-        var levelEl = $(this).siblings('.criteria-level-input');
+        var btn = $(this);
+        var indicatorId = btn.data('indicator');
+        var inputEl = btn.siblings('.criteria-input');
+        var levelEl = btn.siblings('.criteria-level-input');
         var uraian = inputEl.val();
         var level = levelEl.length ? levelEl.val() : 1;
 
         if (!uraian) { inputEl.focus(); return; }
+
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
 
         $.ajax({
             url: '/indicators/' + indicatorId + '/criteria',
             type: 'POST',
             data: { _token: '{{ csrf_token() }}', uraian: uraian, level: level },
             success: function(resp) {
-                if (resp.success) {
+                btn.prop('disabled', false).html('<i class="fas fa-plus"></i>');
+                try {
+                    if (resp.success) {
+                        var newCriteria = resp.criteria;
+                        var criteriaList = $('#criteria-list-' + indicatorId + ' ul');
+                        
+                        var levelBadge = '';
+                        var levelSelect = '';
+                        
+                        // Only render level parts if the template uses levels
+                        if ($('.criteria-level-input').length > 0) {
+                            levelBadge = newCriteria.level > 0 ? `<span class="badge badge-light border mr-2 mt-1" style="font-size: 0.65rem;">Lv.${newCriteria.level}</span>` : '';
+                            
+                            var options = '';
+                            for (var lv = 1; lv <= 5; lv++) {
+                                options += `<option value="${lv}" ${newCriteria.level == lv ? 'selected' : ''}>Lv.${lv}</option>`;
+                            }
+                            
+                            levelSelect = `
+                                <select class="form-control form-control-sm ml-1 criteria-level-select mt-1" data-id="${newCriteria.id}" style="max-width: 65px; height: 24px; font-size: 0.75rem; padding: 0 4px;">
+                                    ${options}
+                                </select>
+                            `;
+                        }
+
+                        // Escape HTML for safety and proper format
+                        var escapedUraian = $('<div>').text(newCriteria.uraian).html();
+
+                        var newLi = `
+                            <li class="text-muted text-sm d-flex align-items-start py-1 criteria-item" id="criteria-${newCriteria.id}">
+                                <i class="fas fa-check mr-2 text-success" style="font-size: 0.7rem; margin-top: 0.35rem;"></i>
+                                ${levelBadge}
+                                <span class="editable-text flex-grow-1" data-type="criteria" data-id="${newCriteria.id}" data-field="uraian" style="white-space: pre-wrap; word-break: break-word;">${escapedUraian}</span>
+                                ${levelSelect}
+                                <button type="button" class="btn btn-xs text-danger p-0 opacity-50 hover-opacity-100 btn-delete-criteria ml-2 mt-1" data-id="${newCriteria.id}" style="line-height:1">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </li>
+                        `;
+                        
+                        criteriaList.append(newLi);
+                        inputEl.val('');
+                        toastr.success('Kriteria ditambahkan');
+                    }
+                } catch(e) {
+                    console.error("DOM append error:", e);
+                    toastr.success('Tersimpan di database (Refresh untuk melihat)');
                     inputEl.val('');
-                    toastr.success('Kriteria ditambahkan');
-                    // Reload to show new criteria properly
-                    location.reload();
                 }
             },
             error: function(xhr) {
+                btn.prop('disabled', false).html('<i class="fas fa-plus"></i>');
                 toastr.error(xhr.responseJSON?.message || 'Gagal menambah kriteria');
             }
         });
     });
 
-    // Enter key on criteria input
+    // Ctrl+Enter or Shift+Enter key on criteria config or we just do Ctrl+Enter
     $(document).on('keydown', '.criteria-input', function(e) {
-        if (e.key === 'Enter') {
+        if (e.key === 'Enter' && e.ctrlKey) {
             e.preventDefault();
             $(this).siblings('.btn-add-criteria').click();
         }
@@ -440,6 +638,150 @@ $(document).ready(function() {
         });
     });
 
+    // ─── AJAX Update Langkah Jenis Prosedur ───────────────
+    $(document).on('change', '.langkah-jenis-select', function() {
+        var id = $(this).data('id');
+        var jenis = $(this).val();
+
+        $.ajax({
+            url: '/template-langkah/' + id,
+            type: 'POST',
+            data: { _method: 'PUT', _token: '{{ csrf_token() }}', jenis_prosedur: jenis },
+            success: function(resp) {
+                if (resp.success) toastr.success('Jenis Prosedur diupdate');
+            },
+            error: function() { toastr.error('Gagal update Jenis Prosedur'); }
+        });
+    });
+
+    // ─── AJAX Add Langkah Kerja ───────────────────────────
+    $(document).on('click', '.btn-add-langkah', function() {
+        var btn = $(this);
+        var indicatorId = btn.data('indicator');
+        // Target container securely by adding a debug step
+        var inputEl = $('.langkah-input[data-indicator="' + indicatorId + '"]');
+        var jenisEl = $('.langkah-jenis-input[data-indicator="' + indicatorId + '"]');
+        
+        if (inputEl.length === 0) {
+            Swal.fire('Error UI', 'Elemen input tidak ditemukan untuk ID indikator ' + indicatorId, 'error');
+            return;
+        }
+
+        var uraian = inputEl.val() ? inputEl.val().trim() : '';
+        var jenis_prosedur = jenisEl.val() ? jenisEl.val() : '';
+
+        if (!uraian) { 
+            inputEl.focus(); 
+            toastr.warning('Langkah kerja tidak boleh kosong');
+            return; 
+        }
+
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin"></i>');
+
+        $.ajax({
+            url: '/indicators/' + indicatorId + '/langkah',
+            type: 'POST',
+            data: { _token: '{{ csrf_token() }}', uraian: uraian, jenis_prosedur: jenis_prosedur },
+            success: function(resp) {
+                btn.prop('disabled', false).html('<i class="fas fa-plus mr-1"></i>Tambah');
+                try {
+                    if (resp.success) {
+                        var newLangkah = resp.langkah;
+                        var langkahList = $('#langkah-list-' + indicatorId + ' ul');
+                        var escapedUraian = $('<div>').text(newLangkah.uraian).html();
+                        // Map jenis prosedur to label
+                        var map = {
+                            '': '-- Jenis --',
+                            'wawancara': 'Wawancara', 'observasi': 'Observasi', 'inspeksi_dokumen': 'Inspeksi Dokumen',
+                            'analisis_data': 'Analisis Data', 'konfirmasi': 'Konfirmasi', 'rekalkulasi': 'Rekalkulasi',
+                            'kuesioner': 'Kuesioner', 'lainnya': 'Lainnya'
+                        };
+
+                        var optionsHtml = '';
+                        Object.keys(map).forEach(function(k) {
+                            optionsHtml += `<option value="${k}" ${newLangkah.jenis_prosedur === k ? 'selected' : ''}>${map[k]}</option>`;
+                        });
+
+                        var selectHtml = `
+                            <select class="form-control form-control-sm ml-1 langkah-jenis-select mt-1" data-id="${newLangkah.id}" style="max-width: 140px; height: 24px; font-size: 0.75rem; padding: 0 4px;">
+                                ${optionsHtml}
+                            </select>
+                        `;
+
+                        var newLi = `
+                            <li class="text-muted text-sm d-flex align-items-start py-1 langkah-item" id="langkah-${newLangkah.id}">
+                                <i class="fas fa-circle mr-2 text-primary" style="font-size: 0.4rem; margin-top: 0.5rem;"></i>
+                                <span class="editable-text flex-grow-1" data-type="langkah" data-id="${newLangkah.id}" data-field="uraian" style="white-space: pre-wrap; word-break: break-word;">${escapedUraian}</span>
+                                ${selectHtml}
+                                <button type="button" class="btn btn-xs text-danger p-0 opacity-50 hover-opacity-100 btn-delete-langkah ml-2 mt-1" data-id="${newLangkah.id}" style="line-height:1" title="Hapus Langkah">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </li>
+                        `;
+                        
+                        langkahList.append(newLi);
+                        inputEl.val('');
+                        jenisEl.val('');
+                        toastr.success('Langkah Kerja ditambahkan');
+                    }
+                } catch(e) {
+                    console.error("DOM append error:", e);
+                    toastr.success('Tersimpan di database (Refresh untuk melihat)');
+                    inputEl.val('');
+                }
+            },
+            error: function(xhr) {
+                btn.prop('disabled', false).html('<i class="fas fa-plus mr-1"></i>Tambah');
+                var errMsg = xhr.responseJSON?.message;
+                if (!errMsg) {
+                    if (xhr.status === 419) errMsg = "Sesi telah habis (Page Expired). Silakan refresh halaman.";
+                    else if (xhr.status === 500) errMsg = "Terjadi kesalahan internal server (500). " + xhr.responseText.substring(0,100) + '...';
+                    else errMsg = 'HTTP Error ' + xhr.status + ': ' + xhr.statusText;
+                }
+                Swal.fire('Gagal Menyimpan', errMsg, 'error');
+            }
+        });
+    });
+
+    // Ctrl+Enter or Shift+Enter key on langkah config
+    $(document).on('keydown', '.langkah-input', function(e) {
+        if (e.key === 'Enter' && e.ctrlKey) {
+            e.preventDefault();
+            var indicatorId = $(this).data('indicator');
+            $('.btn-add-langkah-' + indicatorId).click();
+        }
+    });
+
+    // ─── AJAX Delete Langkah Kerja ────────────────────────
+    $(document).on('click', '.btn-delete-langkah', function() {
+        var id = $(this).data('id');
+        var li = $(this).closest('.langkah-item');
+
+        Swal.fire({
+            title: 'Hapus langkah kerja ini?',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            confirmButtonText: 'Hapus',
+            cancelButtonText: 'Batal'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: '/template-langkah/' + id,
+                    type: 'POST',
+                    data: { _method: 'DELETE', _token: '{{ csrf_token() }}' },
+                    success: function(resp) {
+                        if (resp.success) {
+                            li.fadeOut(200, function() { $(this).remove(); });
+                            toastr.success('Langkah kerja dihapus');
+                        }
+                    },
+                    error: function() { toastr.error('Gagal menghapus langkah'); }
+                });
+            }
+        });
+    });
+
     // ─── Collapse / Expand All ────────────────────────────
     $('#btnCollapseAll').on('click', function() {
         $('.card-body').slideUp(200);
@@ -450,6 +792,7 @@ $(document).ready(function() {
 });
 </script>
 <style>
+    .hover-info:hover { color: #17a2b8 !important; }
     .hover-red:hover { color: #dc3545 !important; }
     .hover-danger:hover { color: #dc3545 !important; }
     .text-light-gray { color: #ced4da; }

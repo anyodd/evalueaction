@@ -79,17 +79,22 @@
                                     <span class="badge {{ $pka->status_badge }} p-2">{{ $pka->status_label }}</span>
                                 </td>
                                 <td data-label="Aksi">
-                                    <div class="btn-group">
-                                        <a href="{{ route('program-kerja.show', $pka->id) }}" class="btn btn-sm btn-outline-primary" title="Detail">
-                                            <i class="fas fa-eye"></i>
-                                        </a>
-                                        <a href="{{ route('program-kerja.edit', $pka->id) }}" class="btn btn-sm btn-outline-warning" title="Edit">
-                                            <i class="fas fa-edit"></i>
-                                        </a>
-                                        <a href="{{ route('program-kerja.print', $pka->id) }}" class="btn btn-sm btn-outline-secondary" title="Cetak" target="_blank">
-                                            <i class="fas fa-print"></i>
-                                        </a>
-                                    </div>
+                                        <div class="btn-group">
+                                            <a href="{{ route('program-kerja.show', $pka->id) }}" class="btn btn-sm btn-outline-primary" title="Detail">
+                                                <i class="fas fa-eye"></i>
+                                            </a>
+                                            <a href="{{ route('program-kerja.edit', $pka->id) }}" class="btn btn-sm btn-outline-warning" title="Edit">
+                                                <i class="fas fa-edit"></i>
+                                            </a>
+                                            <a href="{{ route('program-kerja.print', $pka->id) }}" class="btn btn-sm btn-outline-secondary" title="Cetak" target="_blank">
+                                                <i class="fas fa-print"></i>
+                                            </a>
+                                            @if($pka->status === 'draft')
+                                                <button type="button" class="btn btn-sm btn-outline-danger btn-delete-pka" data-id="{{ $pka->id }}" data-judul="{{ $pka->judul }}" title="Hapus">
+                                                    <i class="fas fa-trash"></i>
+                                                </button>
+                                            @endif
+                                        </div>
                                 </td>
                             </tr>
                         @empty
@@ -108,6 +113,7 @@
 @stop
 
 @section('js')
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
     <script>
         $(document).ready(function() {
             $('#pka-table').DataTable({
@@ -119,6 +125,48 @@
                     paginate: { previous: "‹", next: "›" },
                     emptyTable: "Tidak ada data"
                 }
+            });
+
+            // Delete Program Kerja
+            $(document).on('click', '.btn-delete-pka', function() {
+                let id = $(this).data('id');
+                let judul = $(this).data('judul');
+                let url = "{{ route('program-kerja.destroy', ':id') }}";
+                url = url.replace(':id', id);
+
+                Swal.fire({
+                    title: 'Hapus Program Kerja?',
+                    html: `Anda yakin ingin menghapus PKA <strong>"${judul}"</strong>?<br><small class="text-danger">Tindakan ini tidak dapat dibatalkan!</small>`,
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    cancelButtonColor: '#3085d6',
+                    confirmButtonText: 'Ya, Hapus!',
+                    cancelButtonText: 'Batal'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        // Create a form dynamically and submit it
+                        let form = $('<form>', {
+                            'method': 'POST',
+                            'action': url
+                        });
+
+                        form.append($('<input>', {
+                            'type': 'hidden',
+                            'name': '_token',
+                            'value': '{{ csrf_token() }}'
+                        }));
+
+                        form.append($('<input>', {
+                            'type': 'hidden',
+                            'name': '_method',
+                            'value': 'DELETE'
+                        }));
+
+                        $('body').append(form);
+                        form.submit();
+                    }
+                });
             });
         });
     </script>

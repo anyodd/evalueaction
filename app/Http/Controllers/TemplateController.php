@@ -58,6 +58,8 @@ class TemplateController extends Controller
                 }, 'children' => function($q2) {
                     $q2->orderBy('id')->with(['criteria' => function($qc2) {
                         $qc2->orderBy('level')->orderBy('id');
+                    }, 'langkahs' => function($ql) {
+                        $ql->orderBy('id');
                     }]);
                 }]);
             }])
@@ -221,10 +223,10 @@ class TemplateController extends Controller
         $newTemplate->is_active = false;
         $newTemplate->save();
 
-        // Clone root indicators → children → grandchildren → criteria
+        // Clone root indicators → children → grandchildren → criteria & langkahs
         $roots = TemplateIndicator::where('template_id', $template->id)
             ->whereNull('parent_id')
-            ->with(['children.children.criteria', 'children.criteria', 'criteria'])
+            ->with(['children.children.criteria', 'children.children.langkahs', 'children.criteria', 'children.langkahs', 'criteria', 'langkahs'])
             ->get();
 
         foreach ($roots as $root) {
@@ -249,6 +251,13 @@ class TemplateController extends Controller
             $newC->save();
         }
 
+        // Clone langkahs
+        foreach ($source->langkahs as $langkah) {
+            $newL = $langkah->replicate();
+            $newL->indicator_id = $newInd->id;
+            $newL->save();
+        }
+
         // Clone children recursively
         foreach ($source->children as $child) {
             $this->cloneIndicatorTree($child, $newTemplateId, $newInd->id);
@@ -267,6 +276,8 @@ class TemplateController extends Controller
                 }, 'children' => function($q2) {
                     $q2->orderBy('id')->with(['criteria' => function($qc2) {
                         $qc2->orderBy('level')->orderBy('id');
+                    }, 'langkahs' => function($ql) {
+                        $ql->orderBy('id');
                     }]);
                 }]);
             }])

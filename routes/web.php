@@ -32,6 +32,7 @@ Route::group(['middleware' => ['auth']], function () {
     // Kertas Kerja
     Route::get('kertas-kerja/generate/{st_id}', [App\Http\Controllers\KertasKerjaController::class, 'generate'])->name('kertas-kerja.generate');
     Route::get('kertas-kerja/fetch-reference', [App\Http\Controllers\KertasKerjaController::class, 'fetchReference'])->name('kertas-kerja.fetch-reference');
+    Route::post('/kertas-kerja/update-single', [App\Http\Controllers\KertasKerjaController::class, 'updateSingle'])->name('kertas-kerja.update-single');
     Route::resource('kertas-kerja', App\Http\Controllers\KertasKerjaController::class);
     Route::post('/kertas-kerja/{id}/submit', [App\Http\Controllers\KertasKerjaController::class, 'submit'])->name('kertas-kerja.submit');
     Route::post('/kertas-kerja/{id}/approve', [App\Http\Controllers\KertasKerjaController::class, 'approve'])->name('kertas-kerja.approve');
@@ -43,6 +44,10 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('/kertas-kerja/update-qa-single', [App\Http\Controllers\KertasKerjaController::class, 'updateQaSingle'])->name('kertas-kerja.update-qa-single');
     Route::post('/kertas-kerja/update-tanggapan-qa', [\App\Http\Controllers\KertasKerjaController::class, 'updateTanggapanQa'])->name('kertas-kerja.update-tanggapan-qa');
     Route::post('/kertas-kerja/{id}/finalize-qa', [\App\Http\Controllers\KertasKerjaController::class, 'finalizeQa'])->name('kertas-kerja.finalize-qa');
+    
+    // Excel Export/Import
+    Route::get('/kertas-kerja/{id}/export-excel', [App\Http\Controllers\KertasKerjaController::class, 'exportExcel'])->name('kertas-kerja.export-excel');
+    Route::post('/kertas-kerja/{id}/import-excel', [App\Http\Controllers\KertasKerjaController::class, 'importExcel'])->name('kertas-kerja.import-excel');
     
     // Laporan
     Route::get('laporan', [App\Http\Controllers\LaporanController::class, 'index'])->name('laporan.index');
@@ -56,10 +61,15 @@ Route::group(['middleware' => ['auth']], function () {
     // Program Kerja
     Route::resource('program-kerja', App\Http\Controllers\ProgramKerjaController::class);
     Route::post('program-kerja/assign', [App\Http\Controllers\ProgramKerjaController::class, 'assignLangkah'])->name('program-kerja.assign');
+    Route::post('program-kerja/bulk-assign', [App\Http\Controllers\ProgramKerjaController::class, 'bulkAssignLangkah'])->name('program-kerja.bulk-assign');
     Route::post('program-kerja/remove-assignment', [App\Http\Controllers\ProgramKerjaController::class, 'removeAssignment'])->name('program-kerja.remove-assignment');
     Route::post('program-kerja/langkah/{id}/status', [App\Http\Controllers\ProgramKerjaController::class, 'updateStatus'])->name('program-kerja.update-status');
-    Route::post('program-kerja/langkah/{id}/link-kk', [App\Http\Controllers\ProgramKerjaController::class, 'linkKertasKerja'])->name('program-kerja.link-kk');
+
+    Route::post('program-kerja/{id}/langkah', [App\Http\Controllers\ProgramKerjaController::class, 'storeLangkah'])->name('program-kerja.langkah.store');
+    Route::delete('program-kerja/langkah/{id}', [App\Http\Controllers\ProgramKerjaController::class, 'destroyLangkah'])->name('program-kerja.langkah.destroy');
+
     Route::get('program-kerja/{id}/print', [App\Http\Controllers\ProgramKerjaController::class, 'print'])->name('program-kerja.print');
+
 
     // Users
     Route::resource('users', App\Http\Controllers\UserController::class);
@@ -69,6 +79,7 @@ Route::group(['middleware' => ['auth']], function () {
     
     // Master Data
     Route::resource('roles', App\Http\Controllers\RoleController::class);
+    Route::resource('jenis-penugasan', App\Http\Controllers\JenisPenugasanController::class);
     
     Route::get('templates/{template}/builder', [App\Http\Controllers\TemplateController::class, 'builder'])->name('templates.builder');
     Route::get('templates/{template}/preview', [App\Http\Controllers\TemplateController::class, 'preview'])->name('templates.preview');
@@ -81,13 +92,18 @@ Route::group(['middleware' => ['auth']], function () {
     Route::put('criteria/{criteria}', [App\Http\Controllers\TemplateController::class, 'updateCriteria'])->name('templates.criteria.update');
     Route::delete('criteria/{criteria}', [App\Http\Controllers\TemplateController::class, 'destroyCriteria'])->name('templates.criteria.destroy');
     
+    // Langkah Kerja Standar (Template)
+    Route::post('indicators/{indicator}/langkah', [App\Http\Controllers\TemplateLangkahController::class, 'store'])->name('templates.langkah.store');
+    Route::put('template-langkah/{langkah}', [App\Http\Controllers\TemplateLangkahController::class, 'update'])->name('templates.langkah.update');
+    Route::delete('template-langkah/{langkah}', [App\Http\Controllers\TemplateLangkahController::class, 'destroy'])->name('templates.langkah.destroy');
+    
     Route::resource('templates', App\Http\Controllers\TemplateController::class);
 
-    // Template Program Kerja (Rendal)
-    Route::resource('template-pka', App\Http\Controllers\TemplatePKAController::class);
-    Route::post('template-pka/{id}/langkah', [App\Http\Controllers\TemplatePKAController::class, 'storeLangkah'])->name('template-pka.langkah.store');
-    Route::put('template-pka/langkah/{id}', [App\Http\Controllers\TemplatePKAController::class, 'updateLangkah'])->name('template-pka.langkah.update');
-    Route::delete('template-pka/langkah/{id}', [App\Http\Controllers\TemplatePKAController::class, 'destroyLangkah'])->name('template-pka.langkah.destroy');
+    // Template Program Kerja (Rendal) - Redundant Module, commented out
+    // Route::resource('template-pka', App\Http\Controllers\TemplatePKAController::class);
+    // Route::post('template-pka/{id}/langkah', [App\Http\Controllers\TemplatePKAController::class, 'storeLangkah'])->name('template-pka.langkah.store');
+    // Route::put('template-pka/langkah/{id}', [App\Http\Controllers\TemplatePKAController::class, 'updateLangkah'])->name('template-pka.langkah.update');
+    // Route::delete('template-pka/langkah/{id}', [App\Http\Controllers\TemplatePKAController::class, 'destroyLangkah'])->name('template-pka.langkah.destroy');
 
     // Profile
     Route::get('profile', [App\Http\Controllers\UserController::class, 'profile'])->name('profile');
@@ -101,4 +117,6 @@ Route::group(['middleware' => ['auth']], function () {
     // Tutorial / Panduan
     Route::get('tutorial', [App\Http\Controllers\TutorialController::class, 'index'])->name('tutorial.index');
 
+    // Audit Trail
+    Route::get('audit-trail', [\App\Http\Controllers\AuditTrailController::class, 'index'])->name('audit-trail.index');
 });
