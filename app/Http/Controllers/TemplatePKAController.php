@@ -47,7 +47,7 @@ class TemplatePKAController extends Controller
         ]);
 
         $pka = ProgramKerja::create([
-            'st_id' => null, // Template — no ST
+            'st_id' => null, // Template — tanpa ST
             'judul' => $request->judul,
             'deskripsi' => $request->deskripsi,
             'tujuan' => $request->tujuan,
@@ -69,10 +69,10 @@ class TemplatePKAController extends Controller
         $template = ProgramKerja::whereNull('st_id')->findOrFail($id);
         $langkahRoot = $template->langkahRoot()->with(['children.children', 'kkTemplate', 'children.kkTemplate', 'children.children.kkTemplate'])->get();
 
-        // Count stats
+        // Hitung statistik
         $totalLangkah = $template->langkah()->count();
 
-        // Add available KK templates
+        // Tambahkan template KK yang tersedia
         $kkTemplates = \App\Models\KkTemplate::where('is_active', true)->whereNull('jenis_penugasan_id')->orWhereHas('jenisPenugasan')->get();
 
         return view('template-pka.show', compact('template', 'langkahRoot', 'totalLangkah', 'kkTemplates'));
@@ -113,8 +113,8 @@ class TemplatePKAController extends Controller
     {
         $template = ProgramKerja::whereNull('st_id')->findOrFail($id);
 
-        // Check if any active PKA cloned from this template
-        // (We don't track source_template_id, so just check if it's published)
+        // Periksa apakah ada PKA aktif yang di-clone dari template ini
+        // (Kita tidak melacak source_template_id, jadi cukup periksa apakah statusnya published)
         if ($template->status === 'published') {
             return back()->with('error', 'Template yang sudah Published tidak bisa dihapus. Ubah ke Draft dulu.');
         }
@@ -189,7 +189,7 @@ class TemplatePKAController extends Controller
     {
         $langkah = PkLangkah::findOrFail($id);
 
-        // Delete children too
+        // Hapus turunan juga
         PkLangkah::where('parent_id', $langkah->id)->delete();
         $langkah->delete();
 

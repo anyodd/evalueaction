@@ -24,4 +24,9 @@ class KkAnswer extends Model
     {
         return $this->hasMany(KkAnswerDetail::class, 'kk_answer_id');
     }
+
+    public function teos()
+    {
+        return $this->hasMany(KkTeo::class, 'kk_answer_id');
+    }
 }

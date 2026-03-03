@@ -203,11 +203,90 @@
         @csrf
     </form>
 
+
+    {{-- Modal TEO (Auditor) --}}
+    <div class="modal fade" id="kkTeoModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <form id="kkTeoForm" method="POST">
+                @csrf
+                <div class="modal-content border-0 shadow-lg" style="border-radius: 15px;">
+                    <div class="modal-header bg-warning py-3">
+                        <h5 class="modal-title font-weight-bold text-navy"><i class="fas fa-bullseye mr-2"></i> <span id="kkTeoModalTitle">TEO (Permasalahan)</span></h5>
+                        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    </div>
+                    <div class="modal-body">
+                        <input type="hidden" name="kk_answer_id" id="kkTeoAnswerId">
+                        <div class="form-group mb-0">
+                            <label class="font-weight-bold text-sm">Uraian TEO <span class="text-danger">*</span></label>
+                            <textarea name="teo" id="kkTeoInput" class="form-control" rows="3" required placeholder="Contoh: Pengelolaan aset belum memadai..."></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-warning rounded-pill px-4 font-weight-bold" id="btnSubmitKkTeo">Simpan TEO</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- Modal Finding (Cause + Rec) for Auditor --}}
+    <div class="modal fade" id="kkFindingModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog modal-lg" role="document">
+            <form id="kkFindingForm" method="POST">
+                @csrf
+                <input type="hidden" name="kk_teo_id" id="kkFindingTeoId">
+                <input type="hidden" name="indicator_id" id="kkFindingIndicatorId">
+                <div class="modal-content border-0 shadow-lg" style="border-radius: 15px;">
+                    <div class="modal-header bg-warning py-3">
+                        <h5 class="modal-title font-weight-bold text-navy"><i class="fas fa-exclamation-triangle mr-2"></i> Tambah Penyebab & Rekomendasi</h5>
+                        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="kkFindingTemplateSelection" class="mb-3 d-none">
+                            <label class="font-weight-bold text-sm text-primary"><i class="fas fa-magic mr-1"></i> Pilih dari Standar Rendal:</label>
+                            <div class="form-group">
+                                <select id="kkFindingCauseSelect" class="form-control form-control-sm">
+                                    <option value="">-- Pilih Penyebab --</option>
+                                </select>
+                            </div>
+                            <div id="kkFindingRecSuggestions" class="mt-2 p-2 border rounded bg-light d-none">
+                                <small class="text-muted font-weight-bold text-uppercase d-block mb-1">Rekomendasi Terkait:</small>
+                                <div id="kkFindingRecList"></div>
+                            </div>
+                            <div class="text-center my-2">
+                                <span class="badge badge-light">ATAU</span>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 border-right">
+                                <div class="form-group">
+                                    <label class="font-weight-bold text-sm">Penyebab (Root Cause) <span class="text-danger">*</span></label>
+                                    <textarea name="penyebab" id="kkFindingPenyebab" class="form-control" rows="4" required placeholder="Jelaskan mengapa hal ini terjadi..."></textarea>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="font-weight-bold text-sm">Rekomendasi (Area of Improvement) <span class="text-danger">*</span></label>
+                                    <textarea name="rekomendasi" id="kkFindingRekomendasi" class="form-control" rows="4" required placeholder="Jelaskan langkah perbaikan yang disarankan..."></textarea>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer border-0">
+                        <button type="button" class="btn btn-light rounded-pill px-4" data-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-warning rounded-pill px-4 font-weight-bold" id="btnSubmitKkFinding">Simpan Temuan</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
     {{-- Modal Import Excel --}}
     @if($canEdit)
         <div class="modal fade" id="modal-import-excel" tabindex="-1" role="dialog" aria-labelledby="modalImportLabel" aria-hidden="true">
             <div class="modal-dialog" role="document">
-                <form action="{{ route('kertas-kerja.import-excel', $kertasKerja->id) }}" method="POST" enctype="multipart/form-data">
+                <form id="form-import-excel" action="{{ route('kertas-kerja.import-excel', $kertasKerja->id) }}" method="POST" enctype="multipart/form-data" novalidate>
                     @csrf
                     <div class="modal-content" style="border-radius: 15px;">
                         <div class="modal-header border-0">
@@ -222,11 +301,9 @@
                                 Gunakan file hasil <strong>Export Excel</strong> untuk memastikan format dan ID indikator sudah sesuai.
                             </div>
                             <div class="form-group mt-3">
-                                <label for="file_excel">Pilih File Excel (.xlsx, .xls)</label>
-                                <div class="custom-file">
-                                    <input type="file" class="custom-file-input" id="file_excel" name="file_excel" accept=".xlsx, .xls" required>
-                                    <label class="custom-file-label" for="file_excel">Pilih file...</label>
-                                </div>
+                                <label for="file_excel"><strong>Pilih File Excel (.xls)</strong></label>
+                                <input type="file" class="form-control" id="file_excel" name="file_excel" accept=".xls,.xlsx,.html,.htm">
+                                <small class="text-muted">File hasil Export Excel dari aplikasi ini.</small>
                             </div>
                             <p class="text-xs text-muted mt-2">
                                 <span class="text-danger">*</span> Sistem akan memperbarui nilai, catatan, dan link bukti berdasarkan ID unik di kolom pertama Excel.
@@ -247,12 +324,26 @@
 
 @section('css')
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <style>
+        /* Fix modal z-index / pointer-events issue globally for all modals */
+        .modal { z-index: 1060 !important; }
+        .modal-content { pointer-events: auto !important; }
+        .modal-dialog { pointer-events: auto !important; }
+        .modal-backdrop { z-index: 1055 !important; }
+    </style>
 @stop
 
 @section('js')
     <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
     <script>
         $(document).ready(function() {
+            // Fix: ensure all modals are fully interactive when shown
+            $(document).on('shown.bs.modal', '.modal', function() {
+                // Remove any stuck overlays inherited from AdminLTE wrapper
+                $(this).find('*').css('pointer-events', '');
+                $(this).css('pointer-events', 'auto');
+            });
+            
             $('.btn-finalize-qa').click(function(e) {
                 e.preventDefault();
                 Swal.fire({
@@ -467,6 +558,17 @@
                                 setTimeout(() => badge.removeClass('animate__animated animate__pulse'), 1000);
                             }
 
+                            // Toggle Findings Section based on Score Gap
+                            let score = parseFloat(response.param_score);
+                            let section = $('#findings-section-' + indicatorId);
+                            if (section.length) {
+                                if ((isLevel && score < 5.0) || (!isLevel && score < 100.0)) {
+                                    section.removeClass('d-none').addClass('animate__animated animate__fadeIn');
+                                } else {
+                                    section.addClass('d-none');
+                                }
+                            }
+
                             // Update Rollup Scores (Indicator/Aspect levels)
                             if (response.rollup_scores) {
                                 $.each(response.rollup_scores, function(indId, score) {
@@ -588,6 +690,228 @@
             $('.custom-file-input').on('change', function() {
                 let fileName = $(this).val().split('\\').pop();
                 $(this).next('.custom-file-label').addClass("selected").html(fileName);
+            });
+
+            // ─── Matriks Temuan (Auditor) Management ──────────
+            $('#kkTeoModal, #kkFindingModal').appendTo("body");
+
+            // --- TEO Management ---
+            $(document).on('click', '.btn-import-teo', function(e) {
+                e.preventDefault();
+                let btn = $(this);
+                let teo = btn.data('teo');
+                let indicatorId = btn.data('indicator');
+                let templateTeoId = btn.data('teo-id');
+
+                Swal.fire({
+                    title: 'Ambil TEO Standar?',
+                    text: teo,
+                    icon: 'question',
+                    showCancelButton: true,
+                    confirmButtonText: 'Ya, Ambil'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: '{{ route("kertas-kerja.teos.store") }}',
+                            type: 'POST',
+                            data: {
+                                _token: '{{ csrf_token() }}',
+                                indicator_id: indicatorId,
+                                teo: teo,
+                                template_teo_id: templateTeoId,
+                                kk_id: btn.data('kk')
+                            },
+                            success: function(resp) {
+                                if (resp.success) {
+                                    toastr.success('TEO berhasil ditambahkan');
+                                    location.reload();
+                                }
+                            }
+                        });
+                    }
+                });
+            });
+
+            $(document).on('click', '.btn-manual-teo', function(e) {
+                e.preventDefault();
+                let indicatorId = $(this).data('indicator');
+                let kkId = $(this).data('kk');
+                $('#kkTeoModalTitle').text('Tambah TEO Manual');
+                $('#kkTeoAnswerId').val(''); // Will be handled by indicator_id in controller if answer doesn't exist
+                $('#kkTeoForm').attr('action', '{{ route("kertas-kerja.teos.store") }}');
+                $('#kkTeoForm').find('input[name="indicator_id"]').remove();
+                $('#kkTeoForm').find('input[name="kk_id"]').remove();
+                $('#kkTeoForm').append(`<input type="hidden" name="indicator_id" value="${indicatorId}">`);
+                $('#kkTeoForm').append(`<input type="hidden" name="kk_id" value="${kkId}">`);
+                $('#kkTeoInput').val('');
+                $('#kkTeoModal').modal('show');
+            });
+
+            $('#kkTeoForm').on('submit', function(e) {
+                e.preventDefault();
+                let form = $(this);
+                let btn = $('#btnSubmitKkTeo');
+                btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Menyimpan...');
+
+                $.ajax({
+                    url: form.attr('action'),
+                    type: 'POST',
+                    data: form.serialize(),
+                    success: function(resp) {
+                        if (resp.success) {
+                            $('#kkTeoModal').modal('hide');
+                            toastr.success(resp.message);
+                            location.reload();
+                        }
+                    },
+                    error: function(xhr) { toastr.error(xhr.responseJSON?.message || 'Gagal menyimpan TEO'); },
+                    complete: function() { btn.prop('disabled', false).text('Simpan TEO'); }
+                });
+            });
+
+            $(document).on('click', '.btn-delete-kk-teo', function() {
+                let id = $(this).data('id');
+                Swal.fire({
+                    title: 'Hapus TEO?',
+                    text: 'Seluruh penyebab dan rekomendasi di dalamnya akan ikut dihapus.',
+                    icon: 'warning',
+                    showCancelButton: true,
+                    confirmButtonColor: '#d33',
+                    confirmButtonText: 'Ya, Hapus'
+                }).then((result) => {
+                    if (result.isConfirmed) {
+                        $.ajax({
+                            url: '/kertas-kerja/teos/' + id,
+                            type: 'POST',
+                            data: { _method: 'DELETE', _token: '{{ csrf_token() }}' },
+                            success: function(resp) {
+                                if (resp.success) {
+                                    $('#kk-teo-' + id).fadeOut(300, function() { $(this).remove(); });
+                                    toastr.success('TEO dihapus');
+                                }
+                            }
+                        });
+                    }
+                });
+            });
+
+            // --- Finding (Cause/Rec) Management ---
+            let currentTeoTemplateData = null;
+
+            $(document).on('click', '.btn-add-kk-finding', function() {
+                let teoId = $(this).data('teo-id');
+                let indicatorId = $(this).data('indicator');
+                
+                $('#kkFindingTeoId').val(teoId);
+                $('#kkFindingIndicatorId').val(indicatorId);
+                $('#kkFindingForm')[0].reset();
+                $('#kkFindingTemplateSelection').addClass('d-none');
+                $('#kkFindingRecSuggestions').addClass('d-none');
+                
+                // Check if this TEO is linked to a template TEO
+                $.ajax({
+                    url: '/kertas-kerja/teos/' + teoId + '/template-data',
+                    type: 'GET',
+                    success: function(resp) {
+                        if (resp.success && resp.data.causes.length > 0) {
+                            currentTeoTemplateData = resp.data;
+                            $('#kkFindingTemplateSelection').removeClass('d-none');
+                            let select = $('#kkFindingCauseSelect');
+                            select.empty().append('<option value="">-- Pilih Penyebab Standar --</option>');
+                            resp.data.causes.forEach(c => {
+                                select.append(`<option value="${c.id}">${c.uraian}</option>`);
+                            });
+                        }
+                    }
+                });
+
+                $('#kkFindingModal').modal('show');
+            });
+
+            $('#kkFindingCauseSelect').on('change', function() {
+                let causeId = $(this).val();
+                if (!causeId || !currentTeoTemplateData) {
+                    $('#kkFindingRecSuggestions').addClass('d-none');
+                    return;
+                }
+
+                let cause = currentTeoTemplateData.causes.find(c => c.id == causeId);
+                if (cause) {
+                    $('#kkFindingPenyebab').val(cause.uraian);
+                    
+                    if (cause.recommendations.length > 0) {
+                        $('#kkFindingRecSuggestions').removeClass('d-none');
+                        let list = $('#kkFindingRecList');
+                        list.empty();
+                        cause.recommendations.forEach(r => {
+                            list.append(`
+                                <div class="custom-control custom-radio mb-1">
+                                    <input type="radio" id="rec-opt-${r.id}" name="rec_opt" class="custom-control-input rec-option" data-uraian="${r.uraian}">
+                                    <label class="custom-control-label text-xs font-weight-normal" for="rec-opt-${r.id}">${r.uraian}</label>
+                                </div>
+                            `);
+                        });
+                    } else {
+                        $('#kkFindingRecSuggestions').addClass('d-none');
+                    }
+                }
+            });
+
+            $(document).on('change', '.rec-option', function() {
+                $('#kkFindingRekomendasi').val($(this).data('uraian'));
+            });
+
+            $('#kkFindingForm').on('submit', function(e) {
+                e.preventDefault();
+                let form = $(this);
+                let btn = $('#btnSubmitKkFinding');
+                btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Menyimpan...');
+
+                $.ajax({
+                    url: '{{ route("kertas-kerja.findings.store") }}',
+                    type: 'POST',
+                    data: form.serialize(),
+                    success: function(resp) {
+                        if (resp.success) {
+                            $('#kkFindingModal').modal('hide');
+                            toastr.success(resp.message);
+                            location.reload();
+                        }
+                    },
+                    error: function(xhr) {
+                        let msg = xhr.responseJSON?.message || 'Gagal menyimpan Temuan';
+                        toastr.error(msg);
+                        console.error("Finding Submit Error:", xhr.responseText);
+                    },
+                    complete: function() { btn.prop('disabled', false).text('Simpan Temuan'); }
+                });
+            });
+
+            $(document).on('click', '.btn-delete-kk-finding', function() {
+                let id = $(this).data('id');
+                $.ajax({
+                    url: '/kertas-kerja/findings/' + id,
+                    type: 'POST',
+                    data: { _method: 'DELETE', _token: '{{ csrf_token() }}' },
+                    success: function(resp) {
+                        if (resp.success) {
+                            $('#kk-finding-' + id).fadeOut(200, function() { $(this).remove(); });
+                            toastr.success('Temuan dihapus');
+                        }
+                    }
+                });
+            });
+
+            // Import Excel button handler
+            $('#btn-mulai-import').on('click', function() {
+                var fileInput = document.getElementById('file_excel');
+                if (!fileInput || !fileInput.files || fileInput.files.length === 0) {
+                    toastr.error('Harap pilih file Excel terlebih dahulu.');
+                    return;
+                }
+                var btn = $(this);
+                btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-2"></i> Mengimpor...');
+                $('#form-import-excel').submit();
             });
 
         });

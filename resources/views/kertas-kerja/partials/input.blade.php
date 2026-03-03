@@ -313,4 +313,101 @@
             </div>
         </div>
     @endif
+
+    {{-- Matriks Temuan (Analysis Root Cause) Section --}}
+    @php
+        $metode = $kertasKerja->template->metode_penilaian ?? 'tally';
+        $isLevel = in_array($metode, ['building_block', 'criteria_fulfillment']);
+        $hasGap = $isLevel ? ((float)$nilai < 5.0) : ((float)$nilai < 100.0);
+    @endphp
+    
+    <div class="mt-4 findings-section {{ $hasGap ? '' : 'd-none' }}" id="findings-section-{{ $question->id }}">
+        <div class="alert alert-warning py-2 mb-3 shadow-sm border-0" style="border-radius: 10px; background-color: #fff9e6;">
+            <div class="d-flex justify-content-between align-items-center">
+                <span class="font-weight-bold text-navy">
+                    <i class="fas fa-exclamation-circle mr-2 text-warning"></i> 
+                    Analisis Akar Masalah (Root Cause) & Rekomendasi
+                </span>
+                @if($canEdit)
+                    <div class="btn-group">
+                        <button type="button" class="btn btn-xs btn-warning dropdown-toggle" data-toggle="dropdown">
+                            <i class="fas fa-plus mr-1"></i> Tambah TEO
+                        </button>
+                        <div class="dropdown-menu dropdown-menu-right shadow border-0">
+                            <h6 class="dropdown-header">Ambil dari Standar:</h6>
+                            @if($question->teos->count() > 0)
+                                @foreach($question->teos as $stdTeo)
+                                    <a class="dropdown-item text-xs text-dark btn-import-teo" href="#" style="text-decoration: none; white-space: normal; word-break: break-word; line-height: 1.4; padding-top: 0.5rem; padding-bottom: 0.5rem;"
+                                        data-kk="{{ $kertasKerja->id }}"
+                                        data-indicator="{{ $question->id }}"
+                                        data-teo-id="{{ $stdTeo->id }}"
+                                        data-teo="{{ $stdTeo->teo }}">
+                                        <i class="fas fa-magic mr-2 text-info"></i> {{ $stdTeo->teo }}
+                                    </a>
+                                @endforeach
+                                <div class="dropdown-divider"></div>
+                            @endif
+                            <a class="dropdown-item text-xs text-dark btn-manual-teo" href="#" style="text-decoration: none;"
+                                data-kk="{{ $kertasKerja->id }}"
+                                data-indicator="{{ $question->id }}">
+                                <i class="fas fa-keyboard mr-2 text-primary"></i> Input Manual TEO...
+                            </a>
+                        </div>
+                    </div>
+                @endif
+            </div>
+            <p class="text-xs text-muted mb-0 mt-1">Satu parameter bisa memiliki lebih dari 1 TEO, dan tiap TEO bisa memiliki lebih dari 1 Penyebab/Rekomendasi.</p>
+        </div>
+
+        <div id="kk-teo-list-{{ $question->id }}" class="row">
+            @php
+                $teos = $answer ? $answer->teos : collect();
+            @endphp
+            @foreach($teos as $t)
+                <div class="col-md-12 mb-3 kk-teo-card" id="kk-teo-{{ $t->id }}">
+                    <div class="card mb-0 shadow-none border border-warning" style="background-color: #fffdf5; border-radius: 12px;">
+                        <div class="card-header p-2 bg-transparent d-flex justify-content-between align-items-center border-bottom">
+                            <span class="text-sm font-weight-bold text-navy">
+                                <i class="fas fa-bullseye mr-1 text-warning"></i> 
+                                TEO: {{ $t->teo }}
+                            </span>
+                            @if($canEdit)
+                                <div>
+                                    <button type="button" class="btn btn-xs btn-outline-warning btn-add-kk-finding" 
+                                        data-teo-id="{{ $t->id }}" 
+                                        data-indicator="{{ $question->id }}"
+                                        title="Tambah Penyebab & Rekomendasi">
+                                        <i class="fas fa-plus mr-1"></i> Temuan
+                                    </button>
+                                    <button type="button" class="btn btn-xs text-danger btn-delete-kk-teo" data-id="{{ $t->id }}">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                </div>
+                            @endif
+                        </div>
+                        <div class="card-body p-2">
+                            <div class="row" id="kk-finding-list-{{ $t->id }}">
+                                @foreach($t->findings as $f)
+                                    <div class="col-12 mb-2 kk-finding-card" id="kk-finding-{{ $f->id }}">
+                                        <div class="p-2 border rounded bg-white h-100 position-relative">
+                                            @if($canEdit)
+                                                <button type="button" class="btn btn-xs text-danger position-absolute btn-delete-kk-finding" 
+                                                    style="top: 2px; right: 2px;" data-id="{{ $f->id }}">
+                                                    <i class="fas fa-times"></i>
+                                                </button>
+                                            @endif
+                                            <div class="text-xs text-muted">
+                                                <p class="mb-1"><strong>Penyebab:</strong> {{ $f->cause }}</p>
+                                                <p class="mb-0"><strong>Rekomendasi:</strong> {{ $f->recommendation }}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endforeach
+        </div>
+    </div>
 </div>

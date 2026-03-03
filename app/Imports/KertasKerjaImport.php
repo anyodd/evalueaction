@@ -1,7 +1,5 @@
 <?php
 
-namespace App\Exports; // Oops, should be App\Imports, will fix folder or namespace
-
 namespace App\Imports;
 
 use App\Models\KkAnswer;

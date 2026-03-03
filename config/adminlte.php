@@ -138,6 +138,14 @@ return [
             'url'         => 'home',
             'icon'        => 'fas fa-fw fa-tachometer-alt',
         ],
+        [
+            'text'        => 'Dashboard Temuan',
+            'url'         => 'findings/dashboard',
+            'icon'        => 'fas fa-fw fa-chart-pie',
+            'label'       => 'NEW',
+            'label_color' => 'success',
+            'can'         => ['superadmin', 'rendal'],
+        ],
         ['header' => 'PENGELOLAAN TUGAS'],
         [
             'text'        => 'Surat Tugas',

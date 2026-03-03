@@ -10,7 +10,7 @@ class SuratTugasController extends Controller
     {
         $query = \App\Models\SuratTugas::with('admin', 'perwakilan')->latest();
         
-        // Scoping per Perwakilan (kecuali Superadmin / Rendal)
+        // Pembatasan lingkup (Scoping) per Perwakilan (kecuali Superadmin / Rendal)
         if (!auth()->user()->role || (!in_array(auth()->user()->role->name, ['Superadmin', 'Rendal']))) {
             $query->where('perwakilan_id', auth()->user()->perwakilan_id);
         }
@@ -25,7 +25,7 @@ class SuratTugasController extends Controller
             $q->where('name', '!=', 'Admin Perwakilan');
         });
         
-        // Scope users for Perwakilan level roles
+        // Batasi lingkup user untuk level Perwakilan
         if (auth()->user()->role && !in_array(auth()->user()->role->name, ['Superadmin', 'Rendal'])) {
             $user_query->where('perwakilan_id', auth()->user()->perwakilan_id);
         }
@@ -49,7 +49,7 @@ class SuratTugasController extends Controller
             'peran' => 'required|array',
         ]);
 
-        // Find active template
+        // Temukan template yang aktif
         $template = \App\Models\KkTemplate::where('jenis_penugasan_id', $request->jenis_penugasan_id)
             ->where('tahun', $request->tahun_evaluasi)
             ->where('is_active', true)
@@ -87,7 +87,7 @@ class SuratTugasController extends Controller
 
     public function edit(\App\Models\SuratTugas $surat_tuga)
     {
-        // Check access
+        // Periksa akses
         if (!auth()->user()->role || (!in_array(auth()->user()->role->name, ['Superadmin', 'Rendal']))) {
             if ($surat_tuga->perwakilan_id !== auth()->user()->perwakilan_id) {
                 abort(403);
@@ -98,7 +98,7 @@ class SuratTugasController extends Controller
             $q->where('name', '!=', 'Admin Perwakilan');
         });
 
-        // Scope users for Perwakilan level roles
+        // Batasi lingkup user untuk level Perwakilan
         if (auth()->user()->role && !in_array(auth()->user()->role->name, ['Superadmin', 'Rendal'])) {
             $user_query->where('perwakilan_id', auth()->user()->perwakilan_id);
         }
@@ -124,7 +124,7 @@ class SuratTugasController extends Controller
             'peran' => 'required|array',
         ]);
 
-        // Find active template (re-check if changed)
+        // Temukan template aktif (periksa ulang jika ada perubahan)
         $template = \App\Models\KkTemplate::where('jenis_penugasan_id', $request->jenis_penugasan_id)
             ->where('tahun', $request->tahun_evaluasi)
             ->where('is_active', true)
@@ -143,7 +143,7 @@ class SuratTugasController extends Controller
                 'template_id' => $template ? $template->id : null,
             ]);
 
-            // Sync Personnel: Delete and Re-insert
+            // Sinkronisasi Personel: Hapus dan Masukkan Ulang
             \App\Models\StPersonel::where('st_id', $surat_tuga->id)->delete();
 
             foreach ($request->personel as $key => $userId) {
@@ -172,8 +172,8 @@ class SuratTugasController extends Controller
     {
         $surat_tuga->load(['personel.user', 'admin', 'perwakilan']);
         
-        // Ensure perwakilan data exists or use defaults/placeholders if needed for testing
-        // Ideally data should be in DB.
+        // Pastikan data perwakilan ada atau gunakan default/placeholder jika dibutuhkan untuk pengujian
+        // Idealnya data harus ada di dalam DB.
         
         return view('surat-tugas.print', compact('surat_tuga'));
     }

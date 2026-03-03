@@ -34,4 +34,9 @@ class TemplateIndicator extends Model
     {
         return $this->hasMany(TemplateLangkah::class, 'indicator_id');
     }
+
+    public function teos()
+    {
+        return $this->hasMany(TemplateTeo::class, 'indicator_id');
+    }
 }

@@ -17,7 +17,7 @@ class TemplateController extends Controller
             ->latest()
             ->get();
 
-        // Count criteria and KK usage for each template
+        // Hitung kriteria dan penggunaan KK untuk setiap template
         foreach ($templates as $t) {
             $t->criteria_count = TemplateCriteria::whereHas('indicator', function ($q) use ($t) {
                 $q->where('template_id', $t->id);
@@ -60,6 +60,8 @@ class TemplateController extends Controller
                         $qc2->orderBy('level')->orderBy('id');
                     }, 'langkahs' => function($ql) {
                         $ql->orderBy('id');
+                    }, 'teos' => function($qf) {
+                        $qf->orderBy('id')->with(['causes.recommendations', 'recommendations']);
                     }]);
                 }]);
             }])
@@ -90,7 +92,7 @@ class TemplateController extends Controller
 
     public function destroy(KkTemplate $template)
     {
-        // Prevent deletion if template is used by any KK
+        // Cegah penghapusan jika template sedang digunakan oleh KK manapun
         $kkCount = \App\Models\KertasKerja::where('template_id', $template->id)->count();
         if ($kkCount > 0) {
             return back()->with('error', "Template tidak bisa dihapus karena sedang digunakan oleh {$kkCount} Kertas Kerja.");
@@ -100,7 +102,7 @@ class TemplateController extends Controller
         return redirect()->route('templates.index')->with('success', 'Template deleted successfully.');
     }
 
-    // ─── Indicator Management ────────────────────────────────
+    // ─── Manajemen Indikator ────────────────────────────────
 
     public function storeIndicator(Request $request, KkTemplate $template)
     {
@@ -164,7 +166,7 @@ class TemplateController extends Controller
         return back()->with('success', 'Indicator removed.');
     }
 
-    // ─── Criteria Management ─────────────────────────────────
+    // ─── Manajemen Kriteria ─────────────────────────────────
 
     public function storeCriteria(Request $request, TemplateIndicator $indicator)
     {
@@ -223,7 +225,7 @@ class TemplateController extends Controller
         $newTemplate->is_active = false;
         $newTemplate->save();
 
-        // Clone root indicators → children → grandchildren → criteria & langkahs
+        // Clone indikator utama → anak → cucu → kriteria & langkah
         $roots = TemplateIndicator::where('template_id', $template->id)
             ->whereNull('parent_id')
             ->with(['children.children.criteria', 'children.children.langkahs', 'children.criteria', 'children.langkahs', 'criteria', 'langkahs'])
@@ -244,27 +246,27 @@ class TemplateController extends Controller
         $newInd->parent_id = $newParentId;
         $newInd->save();
 
-        // Clone criteria
+        // Clone kriteria
         foreach ($source->criteria as $criteria) {
             $newC = $criteria->replicate();
             $newC->indicator_id = $newInd->id;
             $newC->save();
         }
 
-        // Clone langkahs
+        // Clone langkah
         foreach ($source->langkahs as $langkah) {
             $newL = $langkah->replicate();
             $newL->indicator_id = $newInd->id;
             $newL->save();
         }
 
-        // Clone children recursively
+        // Clone turunan secara berulang (recursive)
         foreach ($source->children as $child) {
             $this->cloneIndicatorTree($child, $newTemplateId, $newInd->id);
         }
     }
 
-    // ─── Preview Template ────────────────────────────────────
+    // ─── Pratinjau Template ────────────────────────────────────
 
     public function preview(KkTemplate $template)
     {
@@ -278,6 +280,8 @@ class TemplateController extends Controller
                         $qc2->orderBy('level')->orderBy('id');
                     }, 'langkahs' => function($ql) {
                         $ql->orderBy('id');
+                    }, 'teos' => function($qf) {
+                        $qf->orderBy('id')->with(['causes.recommendations', 'recommendations']);
                     }]);
                 }]);
             }])
@@ -287,7 +291,7 @@ class TemplateController extends Controller
         return view('templates.preview', compact('template', 'indicators'));
     }
 
-    // ─── Bobot Summary (AJAX) ────────────────────────────────
+    // ─── Ringkasan Bobot (AJAX) ────────────────────────────────
 
     public function bobotSummary(KkTemplate $template)
     {

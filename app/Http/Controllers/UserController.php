@@ -10,7 +10,7 @@ class UserController extends Controller
     {
         $query = \App\Models\User::with(['role', 'perwakilan'])->latest();
 
-        // Scoping per Perwakilan (kecuali Superadmin / Rendal)
+        // Pembatasan lingkup (Scoping) per Perwakilan (kecuali Superadmin / Rendal)
         if (!auth()->user()->role || (!in_array(auth()->user()->role->name, ['Superadmin', 'Rendal']))) {
             $query->where('perwakilan_id', auth()->user()->perwakilan_id);
         }
@@ -24,7 +24,7 @@ class UserController extends Controller
         $roles = \App\Models\Role::all();
         $perwakilan_query = \App\Models\Perwakilan::query();
         
-        // Scope for Admin Perwakilan
+        // Batasi lingkup untuk Admin Perwakilan
         if (auth()->user()->role && auth()->user()->role->name === 'Admin Perwakilan') {
             $perwakilan_query->where('id', auth()->user()->perwakilan_id);
         }
@@ -70,7 +70,7 @@ class UserController extends Controller
         $roles = \App\Models\Role::all();
         $perwakilan_query = \App\Models\Perwakilan::query();
         
-        // Scope for Admin Perwakilan
+        // Batasi lingkup untuk Admin Perwakilan
         if (auth()->user()->role && auth()->user()->role->name === 'Admin Perwakilan') {
             $perwakilan_query->where('id', auth()->user()->perwakilan_id);
         }

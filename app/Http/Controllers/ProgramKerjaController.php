@@ -21,15 +21,15 @@ class ProgramKerjaController extends Controller
         $user = auth()->user();
         $roleName = $user->role->name;
 
-        $query = ProgramKerja::whereNotNull('st_id') // Exclude templates
+        $query = ProgramKerja::whereNotNull('st_id') // Exclude template
             ->with(['suratTugas.perwakilan', 'suratTugas.jenisPenugasan', 'creator', 'langkah'])->latest();
 
         if (in_array($roleName, ['Superadmin', 'Rendal'])) {
-            // See all
+            // Lihat semua
         } elseif (in_array($roleName, ['Admin Perwakilan', 'Korwas'])) {
             $query->whereHas('suratTugas', fn($q) => $q->where('perwakilan_id', $user->perwakilan_id));
         } else {
-            // Ketua Tim, Anggota, Dalnis — only see PKA for their ST assignments
+            // Ketua Tim, Anggota, Dalnis — hanya melihat PKA untuk penugasan ST mereka
             $query->whereHas('suratTugas.personel', fn($q) => $q->where('user_id', $user->id));
         }
 
@@ -46,11 +46,11 @@ class ProgramKerjaController extends Controller
         $user = auth()->user();
         $roleName = $user->role->name;
 
-        // Get available Surat Tugas
+        // Ambil Surat Tugas yang tersedia
         $stQuery = SuratTugas::with(['perwakilan', 'jenisPenugasan']);
 
         if (in_array($roleName, ['Superadmin', 'Rendal'])) {
-            // all
+            // semua
         } elseif (in_array($roleName, ['Admin Perwakilan', 'Korwas'])) {
             $stQuery->where('perwakilan_id', $user->perwakilan_id);
         } else {
@@ -93,21 +93,21 @@ class ProgramKerjaController extends Controller
                 'status' => 'draft',
             ]);
 
-            // Auto-generate Langkah Kerja Standar from SuratTugas -> KkTemplate
+            // Buat otomatis Langkah Kerja Standar dari SuratTugas -> KkTemplate
             $createdPka->load('suratTugas');
             $templateId = $createdPka->suratTugas->template_id;
 
             if ($templateId) {
-                // Get all Parameter Indicators (level 3) for this Template
+                // Ambil semua Indikator Parameter (level 3) untuk Template ini
                 $indicators = \App\Models\TemplateIndicator::where('template_id', $templateId)->get();
                 $indicatorIds = $indicators->pluck('id');
 
                 if ($indicatorIds->isNotEmpty()) {
-                    // Get all target langkah standards
+                    // Ambil semua standar langkah target
                     $langkahStandars = \App\Models\TemplateLangkah::whereIn('indicator_id', $indicatorIds)->get();
 
                     if ($langkahStandars->isNotEmpty()) {
-                        // Group by indicator_id to manage starting urutan per indicator
+                        // Kelompokkan berdasarkan indicator_id untuk mengatur urutan awal per indikator
                         $langkahCounter = [];
 
                         $insertData = [];
@@ -162,15 +162,15 @@ class ProgramKerjaController extends Controller
 
         $this->authorizeAccess($pka);
 
-        // Get available Kertas Kerja for this ST (for linking)
+        // Ambil Kertas Kerja yang tersedia untuk ST ini (untuk ditautkan)
         $kertasKerjaList = KertasKerja::where('st_id', $pka->st_id)->get();
 
-        // Get team members for assignment
+        // Ambil anggota tim untuk penugasan
         $teamMembers = StPersonel::where('st_id', $pka->st_id)
             ->with('user')
             ->get();
 
-        // Determine user capabilities
+        // Tentukan kemampuan user
         $user = auth()->user();
         $roleName = $user->role->name;
         $roleInTeam = StPersonel::where('st_id', $pka->st_id)
@@ -180,25 +180,25 @@ class ProgramKerjaController extends Controller
         $canManage = in_array($roleName, ['Superadmin']) 
             || in_array($roleInTeam, ['Ketua Tim', 'Dalnis']);
 
-        // Fetch KK Template Indicators hierarchy (Aspek -> Indikator -> Parameter)
+        // Ambil hierarki Indikator KK Template (Aspek -> Indikator -> Parameter)
         $kkTemplateId = $pka->suratTugas->template_id ?? null;
         $templateIndicators = collect();
         if ($kkTemplateId) {
             $templateIndicators = \App\Models\TemplateIndicator::where('template_id', $kkTemplateId)
-                ->whereNull('parent_id') // Get root / Level 1 (Aspek)
+                ->whereNull('parent_id') // Ambil root / Level 1 (Aspek)
                 ->with(['children.children' => function($q) {
-                    $q->with('criteria'); // Load criteria for Level 3 (Parameter)
+                    $q->with('criteria'); // Muat kriteria untuk Level 3 (Parameter)
                 }])
                 ->get();
         }
 
-        // Fetch all langkahs for this PKA to group them by template_indicator_id
+        // Ambil semua langkah untuk PKA ini agar dikelompokkan berdasarkan template_indicator_id
         $semuaLangkah = \App\Models\PkLangkah::where('program_kerja_id', $pka->id)
             ->with(['assignments.user', 'kertasKerja', 'templateIndicator', 'children'])
             ->orderBy('urutan')
             ->get();
             
-        // Group by template_indicator_id. Langkah without indicator will be grouped under '' (empty string)
+        // Kelompokkan berdasarkan template_indicator_id. Langkah tanpa indikator akan dikelompokkan ke '' (string kosong)
         $langkahByIndicator = $semuaLangkah->groupBy('template_indicator_id');
 
         return view('program-kerja.show', compact('pka', 'kertasKerjaList', 'teamMembers', 'canManage', 'templateIndicators', 'langkahByIndicator'));
@@ -217,7 +217,7 @@ class ProgramKerjaController extends Controller
 
         $stQuery = SuratTugas::with(['perwakilan', 'jenisPenugasan']);
         if (in_array($roleName, ['Superadmin', 'Rendal'])) {
-            // all
+            // semua
         } elseif (in_array($roleName, ['Admin Perwakilan', 'Korwas'])) {
             $stQuery->where('perwakilan_id', $user->perwakilan_id);
         } else {
@@ -355,7 +355,7 @@ class ProgramKerjaController extends Controller
 
         $langkah = PkLangkah::with('programKerja.suratTugas')->findOrFail($request->pk_langkah_id);
 
-        // Verify user is part of the team
+        // Pastikan user adalah bagian dari tim
         $isTeamMember = StPersonel::where('st_id', $langkah->programKerja->st_id)
             ->where('user_id', $request->user_id)
             ->exists();
@@ -397,7 +397,7 @@ class ProgramKerjaController extends Controller
 
         $pka = ProgramKerja::with('suratTugas')->findOrFail($request->program_kerja_id);
 
-        // Verify user is part of the team
+        // Pastikan user adalah bagian dari tim
         $isTeamMember = StPersonel::where('st_id', $pka->st_id)
             ->where('user_id', $request->user_id)
             ->exists();
@@ -406,7 +406,7 @@ class ProgramKerjaController extends Controller
             return response()->json(['success' => false, 'message' => 'User bukan anggota tim ST ini.'], 422);
         }
 
-        // Get all langkah work within this parameter
+        // Ambil semua pekerjaan langkah di dalam parameter ini
         $langkahs = PkLangkah::where('program_kerja_id', $pka->id)
             ->where('template_indicator_id', $request->parameter_id)
             ->get();
@@ -418,13 +418,13 @@ class ProgramKerjaController extends Controller
         DB::beginTransaction();
         try {
             foreach ($langkahs as $langkah) {
-                // If the langkah is already assigned to this user, skip or update. 
-                // Using updateOrCreate ensures they own it.
-                // Note: the current system architecture allows multiple assignments per langkah, 
-                // but usually it's one person per step. We will just add the assignment for this user.
+                // Jika langkah ini sudah ditugaskan ke user ini, lewati atau perbarui. 
+                // Menggunakan updateOrCreate memastikan mereka memilikinya.
+                // Catatan: arsitektur sistem saat ini memungkinkan beberapa penugasan per langkah, 
+                // tapi biasanya satu orang per langkah. Kita hanya akan menambahkan penugasan untuk user ini.
                 
-                // First delete existing assignments for this step to avoid duplicates if 
-                // we only want 1 assignee per step as standard practice in bulk
+                // Pertama hapus penugasan yang ada untuk langkah ini demi menghindari duplikasi jika 
+                // kita hanya menginginkan 1 assignee per langkah sebagai standar secara kolektif (bulk)
                 PkAssignment::where('pk_langkah_id', $langkah->id)->delete();
 
                 PkAssignment::create([
@@ -465,12 +465,12 @@ class ProgramKerjaController extends Controller
             'tgl_selesai' => $request->status === 'completed' ? now() : $langkah->tgl_selesai,
         ]);
 
-        // Also update assignment status if exists for current user
+        // Perbarui juga status penugasan jika ada bagi user saat ini
         PkAssignment::where('pk_langkah_id', $id)
             ->where('user_id', auth()->id())
             ->update(['status' => $request->status === 'completed' ? 'completed' : 'in_progress']);
 
-        // Auto-complete PKA if all langkah done
+        // Auto-complete PKA jika semua langkah telah selesai
         $pka = $langkah->programKerja;
         $allCompleted = $pka->langkah()->whereNotIn('status', ['completed', 'skipped'])->count() === 0;
         if ($allCompleted && $pka->langkah()->count() > 0) {
@@ -531,7 +531,7 @@ class ProgramKerjaController extends Controller
         $roleName = $user->role->name;
 
         if (in_array($roleName, ['Superadmin', 'Rendal'])) {
-            return; // Full access
+            return; // Akses penuh
         }
 
         if (in_array($roleName, ['Admin Perwakilan', 'Korwas'])) {
@@ -552,8 +552,8 @@ class ProgramKerjaController extends Controller
     }
 
     /**
-     * Clone langkah from a template PKA into an active PKA.
-     * All cloned langkah are marked with from_template = true.
+     * Clone langkah dari template PKA ke PKA yang aktif.
+     * Semua langkah yang di-clone ditandai dengan from_template = true.
      */
     private function cloneTemplateLangkah($templateId, $targetPkaId, $sourceParentId = null, $targetParentId = null)
     {
@@ -576,7 +576,7 @@ class ProgramKerjaController extends Controller
                 'from_template' => true,
             ]);
 
-            // Recursively clone children
+            // Clone turunan secara berulang (recursive)
             $this->cloneTemplateLangkah($templateId, $targetPkaId, $langkah->id, $newLangkah->id);
         }
     }

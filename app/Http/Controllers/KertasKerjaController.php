@@ -12,14 +12,16 @@ class KertasKerjaController extends Controller
     public function index()
     {
         if (auth()->user()->role && auth()->user()->role->name === 'Superadmin') {
-            $assignments = \App\Models\SuratTugas::with(['jenisPenugasan', 'template', 'kertasKerja'])
+            $assignments = \App\Models\SuratTugas::whereHas('programKerja')
+                ->with(['jenisPenugasan', 'template', 'kertasKerja'])
                 ->latest()
                 ->get();
         } else {
-            // 1. Get STs where user is assigned
-            $assignments = \App\Models\SuratTugas::whereHas('personel', function($q) {
-                $q->where('user_id', auth()->id());
-            })->with(['jenisPenugasan', 'template', 'kertasKerja'])
+            // 1. Ambil ST di mana user ditugaskan dan memiliki Program Kerja
+            $assignments = \App\Models\SuratTugas::whereHas('programKerja')
+                ->whereHas('personel', function($q) {
+                    $q->where('user_id', auth()->id());
+                })->with(['jenisPenugasan', 'template', 'kertasKerja'])
             ->latest()
             ->get();
         }
@@ -31,7 +33,7 @@ class KertasKerjaController extends Controller
     {
         $st = \App\Models\SuratTugas::findOrFail($st_id);
         
-        // Validation: Check if user is in team (Bypass for Superadmin)
+        // Validasi: Cek apakah user ada di dalam tim (Bypass untuk Superadmin)
         $isTim = \App\Models\StPersonel::where('st_id', $st->id)
             ->where('user_id', auth()->id())
             ->exists();
@@ -42,7 +44,7 @@ class KertasKerjaController extends Controller
             abort(403, 'Anda tidak terdaftar dalam tim penugasan ini.');
         }
 
-        // Check if KK already exists for this ST
+        // Cek apakah KK sudah ada untuk ST ini
         $kk = \App\Models\KertasKerja::where('st_id', $st->id)->first();
 
         if (!$kk) {
@@ -63,7 +65,7 @@ class KertasKerjaController extends Controller
         $user = auth()->user();
         $isSuperadmin = $user->hasRole('Superadmin');
         
-        // Get User Role in this specific ST
+        // Ambil User Role spesifik pada ST ini
         $roleInTeam = trim((string)\App\Models\StPersonel::where('st_id', $kertasKerja->st_id)
             ->where('user_id', $user->id)
             ->value('role_dalam_tim'));
@@ -71,11 +73,11 @@ class KertasKerjaController extends Controller
         $isCreator = $kertasKerja->user_id == $user->id;
         $isKetua = $roleInTeam == 'Ketua Tim';
 
-    // Collaborative Permission Logic:
-    // 1. Superadmin OR Rendal: Always Allow (View Only for Rendal unless specified)
-    // 2. Draft/Revisi: All Team Members (Assigned to this ST)
-    // 3. Review Ketua: Anggota (Creator) AND Ketua Tim
-    // 4. Locked: Read-only for Team members
+    // Logika Izin Kolaboratif:
+    // 1. Superadmin OR Rendal: Selalu Diizinkan (Hanya Lihat untuk Rendal kecuali dispesifikkan lain)
+    // 2. Draft/Revisi: Semua Anggota Tim (Yang ditugaskan ke ST ini)
+    // 3. Review Ketua: Anggota (Pembuat) DAN Ketua Tim
+    // 4. Terkunci (Locked): Read-only untuk Anggota Tim
     
     $canEdit = false;
     $isMemberOfTeam = \App\Models\StPersonel::where('st_id', $kertasKerja->st_id)
@@ -87,9 +89,9 @@ class KertasKerjaController extends Controller
     if ($isSuperadmin) {
         $canEdit = true;
     } elseif ($isRendal) {
-        $canEdit = false; // Rendal can view but not edit content directly
+        $canEdit = false; // Rendal bisa melihat tapi tidak bisa mengedit konten secara langsung
     } elseif ($isMemberOfTeam) {
-        // TIERED PERMISSION LOGIC (Collaborative View)
+        // LOGIKA IZIN BERTINGKAT (Tampilan Kolaboratif)
         // 1. Posisi Ketua Tim (Draft / Revisi / Review Ketua)
         if ($kertasKerja->status_approval == 'Draft' || 
             str_starts_with($kertasKerja->status_approval, 'Revisi') || 
@@ -113,19 +115,19 @@ class KertasKerjaController extends Controller
         }
     }
 
-    // If not superadmin, not rendal, and not in team, strictly 403
+    // Jika bukan superadmin, bukan rendal, dan bukan tim, strictly 403
     if (!$isSuperadmin && !$isRendal && !$isMemberOfTeam) {
         abort(403, 'Anda tidak terdaftar dalam tim penugasan ini.');
     }
 
-    $kertasKerja->load('template.indicators', 'answers.details');
+    $kertasKerja->load('template.indicators.teos', 'answers.details', 'answers.teos.findings');
     
-    // Organize indicators hierarchy
+    // Mengatur hierarki indikator
     $indicators = \App\Models\TemplateIndicator::where('template_id', $kertasKerja->template_id)
         ->whereNull('parent_id')
         ->with(['children' => function($q) {
-            $q->orderBy('id')->with(['criteria', 'langkahs', 'children' => function($q2) {
-                $q2->orderBy('id')->with(['criteria', 'langkahs']);
+            $q->orderBy('id')->with(['criteria', 'langkahs', 'teos.causes.recommendations', 'children' => function($q2) {
+                $q2->orderBy('id')->with(['criteria', 'langkahs', 'teos.causes.recommendations']);
             }]);
         }])
         ->orderBy('id')
@@ -139,7 +141,7 @@ class KertasKerjaController extends Controller
         $user = auth()->user();
         $isSuperadmin = $user->hasRole('Superadmin');
         
-        // Get User Role in this specific ST
+        // Ambil User Role spesifik pada ST ini
         $roleInTeam = trim((string)\App\Models\StPersonel::where('st_id', $kertasKerja->st_id)
             ->where('user_id', $user->id)
             ->value('role_dalam_tim'));
@@ -151,7 +153,7 @@ class KertasKerjaController extends Controller
         $canEdit = false;
         if ($isSuperadmin) $canEdit = true;
         else {
-             // TIERED PERMISSION LOGIC
+             // LOGIKA IZIN BERTINGKAT
              if ($kertasKerja->status_approval == 'Draft' || 
                 str_starts_with($kertasKerja->status_approval, 'Revisi') || 
                 $kertasKerja->status_approval == 'Review Ketua') {
@@ -184,54 +186,54 @@ class KertasKerjaController extends Controller
             $evidenceLink = $val['evidence_link'] ?? null;
             $evidenceFile = null;
 
-            // Handle File Upload
+            // Tangani Upload File
             if ($request->hasFile("answers.$indikatorId.evidence_file")) {
                 $file = $request->file("answers.$indikatorId.evidence_file");
-                // Store in Google Drive 'evidence' folder
-                // Ensure 'google' disk is configured
+                // Simpan di Google Drive folder 'evidence'
+                // Pastikan disk 'google' telah dikonfigurasi
                 try {
                     $path = $file->store('evidence', 'google');
                     $evidenceFile = $path;
                 } catch (\Exception $e) {
-                    // Fallback or log error if GDrive fails, maybe to local public
+                    // Fallback atau log error jika GDrive gagal, mungkin ke local public
                     \Log::error("GDrive Upload Failed: " . $e->getMessage());
                 }
             }
 
-            // Handle Criteria Tally Logic (Level 3 Parameter)
+            // Tangani Logika Perhitungan Kriteria (Parameter Level 3)
             if (isset($val['criteria']) && is_array($val['criteria'])) {
                 $answer = \App\Models\KkAnswer::firstOrCreate(
                     ['kertas_kerja_id' => $kertasKerja->id, 'indikator_id' => $indikatorId],
                     ['nilai' => 0]
                 );
 
-                // Update evidence if new file uploaded, else keep old
+                // Update eviden jika ada file baru diupload, jika tidak biarkan yang lama
                 $updateData = ['catatan' => $catatan, 'evidence_link' => $evidenceLink];
                 if ($evidenceFile) {
                     $updateData['evidence_file'] = $evidenceFile;
                 }
                 $answer->update($updateData);
 
-                // Sync Checklist details
-                // We DON'T delete anymore to preserve evidence files unless we implement soft delete or smart sync
+                // Sinkronisasi detail Checklist
+                // Kita TIDAK lagi menghapus untuk mempertahankan file eviden kecuali kita mengimplementasikan soft delete atau sinkronisasi pintar
                 // \App\Models\KkAnswerDetail::where('kk_answer_id', $answer->id)->delete(); 
 
                 $totalScoreSum = 0;
                 $maxPossibleScore = 0;
-                // $criteriaCount = count($val['criteria']); // Use DB count later
+                // $criteriaCount = count($val['criteria']); // Gunakan hitungan DB nanti
 
                 foreach ($val['criteria'] as $criteriaId => $cData) {
-                    // cData structure changed to array: ['value' => '...', 'catatan' => '...', 'link' => '...']
+                    // Struktur cData diubah menjadi array: ['value' => '...', 'catatan' => '...', 'link' => '...']
                     $choice = $cData['value'] ?? 'none';
                     $catatanCriteria = $cData['catatan'] ?? null;
                     $linkCriteria = $cData['link'] ?? null;
 
-                    // Choice: 'full' (1.0), 'partial' (0.5), 'none' (0.0)
+                    // Pilihan: 'full' (1.0), 'partial' (0.5), 'none' (0.0)
                     $score = 0;
                     if ($choice === 'full') $score = 1.0;
                     elseif ($choice === 'partial') $score = 0.5;
                     
-                    // Handle Evidence File per Criteria
+                    // Tangani File Eviden per Kriteria
                     $evidenceFileCriteria = null;
                     if ($request->hasFile("answers.$indikatorId.criteria.$criteriaId.evidence")) {
                         $cFile = $request->file("answers.$indikatorId.criteria.$criteriaId.evidence");
@@ -240,11 +242,11 @@ class KertasKerjaController extends Controller
                             $evidenceFileCriteria = $path;
                         } catch (\Exception $e) {
                             \Log::error("Criteria GDrive Upload Failed: " . $e->getMessage());
-                            // Fallback to Public Disk
+                            // Fallback ke Public Disk
                             try {
                                 $path = $cFile->store('evidence', 'public');
                                 $evidenceFileCriteria = $path;
-                                // Optional: Flash warning (only once to avoid spamming)
+                                // Opsional: Tampilkan peringatan (hanya sekali untuk menghindari spam)
                                 if (!session()->has('warning_upload')) {
                                     session()->flash('warning_upload', 'Gagal upload ke Google Drive. File disimpan di server lokal.');
                                 }
@@ -254,7 +256,7 @@ class KertasKerjaController extends Controller
                         }
                     }
 
-                    // Prepare Update Data
+                    // Siapkan Data Update
                     $updateArr = [
                         'answer_value' => $choice,
                         'score' => $score,
@@ -274,11 +276,11 @@ class KertasKerjaController extends Controller
                     $totalScoreSum += $score;
                 }
                 
-                // Calculate Parameter Score (0-100)
-                // Re-fetch total criteria count from DB to be accurate
+                // Hitung Skor Parameter (0-100)
+                // Ambil ulang total jumlah kriteria dari DB agar akurat
                 $totalCriteriaDb = \App\Models\TemplateCriteria::where('indicator_id', $indikatorId)->count();
                 if ($totalCriteriaDb > 0) {
-                     // Normalize to 100
+                     // Normalisasi ke 100
                     $nilai = ($totalScoreSum / $totalCriteriaDb) * 100;
                 } else {
                     $nilai = 0;
@@ -287,8 +289,8 @@ class KertasKerjaController extends Controller
                 $answer->update(['nilai' => $nilai]);
                 
             } else {
-                // Standard Input (Manual / Text)
-                // Check existing to preserve evidence if not uploading new
+                // Input Standar (Manual / Teks)
+                // Cek data yang ada untuk mempertahankan eviden jika tidak mengupload yang baru
                 $answer = \App\Models\KkAnswer::firstOrCreate(
                     ['kertas_kerja_id' => $kertasKerja->id, 'indikator_id' => $indikatorId]
                 );
@@ -298,7 +300,7 @@ class KertasKerjaController extends Controller
             }
         }
         
-        // Recalculate Hierarchy Rollup
+        // Hitung Ulang Rollup Hierarki
         $this->calculateMrRollup($kertasKerja);
 
         \App\Models\KertasKerjaAudit::create([
@@ -325,13 +327,13 @@ class KertasKerjaController extends Controller
             return back()->with('error', 'Kertas kerja sudah diajukan.');
         }
 
-        // Check Role (with string cast for PHP 8.1 compatibility)
+        // Cek Role (dengan konversi string untuk kompatibilitas PHP 8.1)
     $roleInTeam = trim((string)\App\Models\StPersonel::where('st_id', $kk->st_id)
         ->where('user_id', $user->id)
         ->value('role_dalam_tim'));
 
         if ($roleInTeam == 'Ketua Tim') {
-            // Ketua Tim skips 'Review Ketua' and goes straight to 'Review Dalnis'
+            // Ketua Tim melompati 'Review Ketua' dan langsung ke 'Review Dalnis'
             $kk->update(['status_approval' => 'Review Dalnis']);
 
             \App\Models\KertasKerjaAudit::create([
@@ -341,7 +343,7 @@ class KertasKerjaController extends Controller
                 'description' => 'Kertas kerja dikirim langsung ke Dalnis oleh Ketua Tim.',
             ]);
             
-            // Notify Dalnis
+            // Beritahu Dalnis
             $dalnis = \App\Models\StPersonel::where('st_id', $kk->st_id)
                 ->where('role_dalam_tim', 'Dalnis')
                 ->get();
@@ -351,7 +353,7 @@ class KertasKerjaController extends Controller
 
             return back()->with('success', 'Kertas kerja berhasil dikirim ke Dalnis.');
         } else {
-            // Anggota submits to Ketua
+            // Anggota mengajukan ke Ketua
             $kk->update(['status_approval' => 'Review Ketua']);
 
             \App\Models\KertasKerjaAudit::create([
@@ -361,7 +363,7 @@ class KertasKerjaController extends Controller
                 'description' => 'Kertas kerja dikirim ke Ketua Tim.',
             ]);
 
-            // Notify Ketua Tim
+            // Beritahu Ketua Tim
             $ketua = \App\Models\StPersonel::where('st_id', $kk->st_id)
                 ->where('role_dalam_tim', 'Ketua Tim')
                 ->get();
@@ -379,19 +381,19 @@ class KertasKerjaController extends Controller
         $user = auth()->user();
         $stId = $kk->st_id;
 
-        // Get User Role in this specific ST (with trim for safety)
+        // Ambil User Role spesifik pada ST ini (dengan trim untuk keamanan)
         $roleInTeam = trim(\App\Models\StPersonel::where('st_id', $stId)
             ->where('user_id', $user->id)
             ->value('role_dalam_tim'));
 
-        // Validation Logic
+        // Logika Validasi
         if ($kk->status_approval == 'Review Ketua') {
             if ($roleInTeam !== 'Ketua Tim' && !$user->hasRole('Superadmin')) { 
                  return back()->with('error', 'Anda bukan Ketua Tim untuk penugasan ini.');
             }
             $kk->update(['status_approval' => 'Review Dalnis']);
 
-            // Record Approval Note
+            // Catat Catatan Persetujuan
             \App\Models\ReviewNote::create([
                 'kk_id' => $kk->id,
                 'reviewer_id' => $user->id,
@@ -599,19 +601,19 @@ class KertasKerjaController extends Controller
         $aspectWeights = [];
 
         foreach ($aspects as $aspect) {
-            // Level 2: Indicators
+            // Level 2: Indikator
             $indicators = $aspect->children;
             $indScores = [];
             $indWeights = [];
 
             foreach ($indicators as $ind) {
-                // Level 3: Parameters
+                // Level 3: Parameter
                 $params = $ind->children;
                 $paramScores = [];
                 $paramWeights = [];
 
                 foreach ($params as $param) {
-                    // Get Score from DB
+                    // Ambil Skor dari DB
                     $ans = \App\Models\KkAnswer::where('kertas_kerja_id', $kk->id)
                         ->where('indikator_id', $param->id)
                         ->first();
@@ -623,13 +625,13 @@ class KertasKerjaController extends Controller
                     $paramWeights[] = $weight;
                 }
 
-                // Calculate Indicator Score
+                // Hitung Skor Indikator
                 $totalParamWeight = array_sum($paramWeights);
-                $indScore = $totalParamWeight > 0 ? (array_sum($paramScores) / $totalParamWeight) : 0; // Weighted Avg
-                // If weight is percentage (e.g. 30), it's fine. 
-                // If it was already 0-100, checking sum is enough.
+                $indScore = $totalParamWeight > 0 ? (array_sum($paramScores) / $totalParamWeight) : 0; // Rata-rata Tertimbang
+                // Jika bobot berupa persentase (misal 30), tidak masalah. 
+                // Jika sudah 0-100, mengecek jumlahnya sudah cukup.
 
-                // Save Indicator Score (Virtual Answer)
+                // Simpan Skor Indikator (Virtual Answer)
                 \App\Models\KkAnswer::updateOrCreate(
                     ['kertas_kerja_id' => $kk->id, 'indikator_id' => $ind->id],
                     ['nilai' => $indScore, 'catatan' => 'Auto-calculated ROLLUP']
@@ -639,16 +641,16 @@ class KertasKerjaController extends Controller
                 $indWeights[] = ($ind->bobot ?? 0);
             }
 
-            // Calculate Aspect Score
+            // Hitung Skor Aspek
             $totalIndWeight = array_sum($indWeights);
-            $aspectScore = $totalIndWeight > 0 ? (array_sum($indScores) / $totalIndWeight) : 0; // If weights are relative (e.g. 40, 60)
+            $aspectScore = $totalIndWeight > 0 ? (array_sum($indScores) / $totalIndWeight) : 0; // Jika bobot bersifat relatif (misal 40, 60)
             
-            // NOTE: If weights are absolute percentages of parent (e.g. 40% of Total), we might need different logic.
-            // Assuming weights at each level sum to 100 (or relative ratio). 
-            // example: Aspect 1 (40%), Aspect 2 (60%).
-            // Inside Aspect 1: Ind A (50), Ind B (50).
+            // CATATAN: Jika bobot adalah persentase mutlak dari induknya (misal 40% dari Total), kita mungkin butuh logika berbeda.
+            // Asumsikan bobot pada tiap level berjumlah 100 (atau rasio relatif). 
+            // contoh: Aspek 1 (40%), Aspek 2 (60%).
+            // Di dalam Aspek 1: Ind A (50), Ind B (50).
             
-            // Save Aspect Score
+            // Simpan Skor Aspek
             \App\Models\KkAnswer::updateOrCreate(
                     ['kertas_kerja_id' => $kk->id, 'indikator_id' => $aspect->id],
                     ['nilai' => $aspectScore, 'catatan' => 'Auto-calculated ROLLUP']
@@ -658,24 +660,24 @@ class KertasKerjaController extends Controller
             $aspectWeights[] = ($aspect->bobot ?? 0);
         }
 
-        // Final Score
+        // Skor Akhir
         $totalAspectWeight = array_sum($aspectWeights);
         $finalScore = $totalAspectWeight > 0 ? (array_sum($aspectScores) / $totalAspectWeight) : 0; 
         
-        // If weights are like 40, 30, 30 (sum 100), dividing by 100 is correct.
+        // Jika bobotnya seperti 40, 30, 30 (jumlah 100), membaginya dengan 100 adalah benar.
         
         $kk->update(['nilai_akhir' => $finalScore]);
     }
 
     /**
-     * Calculate level-based score for a parameter.
-     * Dispatches to building_block or criteria_fulfillment method.
+     * Hitung skor berbasis level untuk sebuah parameter.
+     * Mengarahkan ke metode building_block atau criteria_fulfillment.
      */
     private function calculateLevelScore(\App\Models\KertasKerja $kk, $indikatorId)
     {
         $metode = $kk->template->metode_penilaian ?? 'tally';
 
-        // Get criteria grouped by level
+        // Ambil kriteria dikelompokkan berdasarkan level
         $criteriaByLevel = \App\Models\TemplateCriteria::where('indicator_id', $indikatorId)
             ->orderBy('level')
             ->get()
@@ -683,7 +685,7 @@ class KertasKerjaController extends Controller
 
         if ($criteriaByLevel->isEmpty()) return 0;
 
-        // Get answer with fresh details
+        // Ambil jawaban beserta detail terbaru
         $answer = \App\Models\KkAnswer::where('kertas_kerja_id', $kk->id)
             ->where('indikator_id', $indikatorId)
             ->with('details')
@@ -699,10 +701,10 @@ class KertasKerjaController extends Controller
     }
 
     /**
-     * Building Block: Sequential level evaluation.
-     * Level N+1 is only evaluated if ALL criteria at Level N are 'full' (Ya).
-     * No 'Sebagian' option — only Ya/Tidak.
-     * Score = achievedLevel + fraction of next level (e.g., 3.21)
+     * Building Block: Evaluasi level secara sekuensial.
+     * Level N+1 hanya dievaluasi jika SEMUA kriteria pada Level N berstatus 'full' (Ya).
+     * Tidak ada pilihan 'Sebagian' — hanya Ya/Tidak.
+     * Skor = levelTercapai + pecahan dari level berikutnya (misal, 3.21)
      */
     private function scoreBuildingBlock($answer, $criteriaByLevel)
     {
@@ -720,10 +722,10 @@ class KertasKerjaController extends Controller
             }
 
             if ($fulfilledCount === $totalCriteria) {
-                // All criteria met → level achieved
+                // Semua kriteria terpenuhi → level tercapai
                 $achievedLevel = $level;
             } else {
-                // Partial → calculate fraction and STOP
+                // Parsial → hitung pecahan dan BERHENTI
                 $fraction = $totalCriteria > 0
                     ? ($fulfilledCount / $totalCriteria)
                     : 0;
@@ -731,14 +733,14 @@ class KertasKerjaController extends Controller
             }
         }
 
-        return round((float)$achievedLevel, 2); // All levels achieved
+        return round((float)$achievedLevel, 2); // Semua level tercapai
     }
 
     /**
-     * Criteria Fulfillment: Independent evaluation of all levels.
+     * Criteria Fulfillment: Evaluasi independen untuk semua level.
      * Ya=1.0, Sebagian=0.5, Tidak=0.
-     * Each level contributes up to 1.0 to the score.
-     * Score = sum of (level_fulfillment) across all levels (max 5.00)
+     * Tiap level menyumbang hingga 1.0 ke skor akhir.
+     * Skor = jumlah dari (pemenuhan_level) di seluruh level (maksimal 5.00)
      */
     private function scoreCriteriaFulfillment($answer, $criteriaByLevel)
     {
@@ -767,8 +769,12 @@ class KertasKerjaController extends Controller
 
     public function exportExcel($id)
     {
-        $kk = \App\Models\KertasKerja::findOrFail($id);
-        $fileName = 'Kertas_Kerja_' . str_replace(' ', '_', $kk->judul_kk) . '.xlsx';
+        $kk = \App\Models\KertasKerja::with(['answers.indicator.parent.parent', 'suratTugas'])->findOrFail($id);
+        $indicators = \App\Models\TemplateIndicator::with(['children.children'])
+            ->where('template_id', $kk->suratTugas->template_id)
+            ->whereNull('parent_id')
+            ->orderBy('id')
+            ->get();
 
         \App\Models\KertasKerjaAudit::create([
             'kertas_kerja_id' => $kk->id,
@@ -777,33 +783,98 @@ class KertasKerjaController extends Controller
             'description' => 'Mengekspor Kertas Kerja ke Excel.',
         ]);
 
-        return Excel::download(new KertasKerjaExport($id), $fileName);
+        $fileName = 'Kertas_Kerja_' . str_replace([' ', '/'], '_', $kk->judul_kk) . '.xls';
+
+        $html = view('kertas-kerja.export-excel', compact('kk', 'indicators'))
+                    ->with('kertasKerja', $kk)
+                    ->render();
+
+        return response($html)
+            ->header('Content-Type', 'application/vnd.ms-excel; charset=utf-8')
+            ->header('Content-Disposition', 'attachment; filename="' . $fileName . '"')
+            ->header('Pragma', 'no-cache')
+            ->header('Expires', '0');
     }
 
     public function importExcel(Request $request, $id)
     {
         $request->validate([
-            'file_excel' => 'required|mimes:xlsx,xls'
+            'file_excel' => 'required'
         ]);
 
         $kk = \App\Models\KertasKerja::findOrFail($id);
+        $file = $request->file('file_excel');
 
         \DB::beginTransaction();
         try {
-            Excel::import(new KertasKerjaImport($id), $request->file('file_excel'));
+            // Baca isi file
+            $contents = file_get_contents($file->getRealPath());
 
-            // Recalculate rollup
+            // Coba parsing sebagai tabel HTML (dari format ekspor kita)
+            $dom = new \DOMDocument('1.0', 'UTF-8');
+            @$dom->loadHTML('<?xml encoding="UTF-8">' . $contents);
+            $rows = $dom->getElementsByTagName('tr');
+
+            $updated = 0;
+            $headerSkipped = false;
+
+            foreach ($rows as $row) {
+                $cells = $row->getElementsByTagName('td');
+                if ($cells->length < 2) continue;
+
+                // Lewati baris header
+                $firstCell = trim($cells->item(0)->textContent);
+                if (!$headerSkipped) {
+                    // Cek apakah ini baris header (kolom ID)
+                    if (strtoupper($firstCell) === 'ID' || !is_numeric($firstCell)) {
+                        $headerSkipped = true;
+                        continue;
+                    }
+                    $headerSkipped = true;
+                }
+
+                $indicatorId   = trim($cells->item(0)->textContent ?? '');
+                $indicatorName = $cells->length > 1 ? trim($cells->item(1)->textContent ?? '') : '';
+                $nilai         = $cells->length > 2 ? trim($cells->item(2)->textContent ?? '') : null;
+                $catatan       = $cells->length > 3 ? trim($cells->item(3)->textContent ?? '') : null;
+                $link          = $cells->length > 4 ? trim($cells->item(4)->textContent ?? '') : null;
+
+                // Lewati baris non-parameter (baris yang mengandung "ASPEK:" atau "INDIKATOR:")
+                if (str_contains($indicatorName, 'ASPEK:') || str_contains($indicatorName, 'INDIKATOR:')) {
+                    continue;
+                }
+
+                if (!$indicatorId || !is_numeric($indicatorId)) continue;
+
+                $indicator = \App\Models\TemplateIndicator::find((int)$indicatorId);
+                if (!$indicator || $indicator->children()->count() > 0) continue;
+
+                // Hanya perbarui jika nilai diberikan
+                if ($nilai !== null && $nilai !== '') {
+                    \App\Models\KkAnswer::updateOrCreate(
+                        ['kertas_kerja_id' => $id, 'indikator_id' => (int)$indicatorId],
+                        [
+                            'nilai' => (float)$nilai,
+                            'catatan' => $catatan ?: null,
+                            'evidence_link' => $link ?: null,
+                        ]
+                    );
+                    $updated++;
+                }
+            }
+
+            // Hitung ulang rollup
             $this->calculateMrRollup($kk);
 
             \App\Models\KertasKerjaAudit::create([
                 'kertas_kerja_id' => $kk->id,
                 'user_id' => auth()->id(),
                 'action' => 'Import',
-                'description' => 'Mengimpor data Kertas Kerja dari Excel.',
+                'description' => "Mengimpor data Kertas Kerja dari Excel. {$updated} parameter diperbarui.",
             ]);
 
             \DB::commit();
-            return back()->with('success', 'Data Kertas Kerja berhasil diimpor dari Excel!');
+            return back()->with('success', "Berhasil mengimpor {$updated} parameter dari Excel!");
         } catch (\Exception $e) {
             \DB::rollBack();
             return back()->with('error', 'Gagal mengimpor data: ' . $e->getMessage());
@@ -844,17 +915,17 @@ class KertasKerjaController extends Controller
 
     public function updateSingle(Request $request)
     {
-        // Validation
+        // Validasi
         $request->validate([
             'kk_id' => 'required|exists:kertas_kerja,id',
             'indicator_id' => 'required|exists:template_indicators,id',
             'criteria_id' => 'required|exists:template_criteria,id',
-            'value' => 'required|in:full,partial,none', // building_block only sends full/none
+            'value' => 'required|in:full,partial,none', // building_block hanya mengirimkan full/none
         ]);
 
         $kk = \App\Models\KertasKerja::findOrFail($request->kk_id);
         
-        // Authorization (Same as Header Edit/Update)
+        // Otorisasi (Sama dengan Header Edit/Update)
         $user = auth()->user();
         $roleInTeam = \App\Models\StPersonel::where('st_id', $kk->st_id)
             ->where('user_id', $user->id) 
@@ -875,9 +946,9 @@ class KertasKerjaController extends Controller
         } elseif ($isRendal) {
             $canEdit = false;
         } elseif ($isMemberOfTeam) {
-            // TIERED PERMISSION LOGIC
+            // LOGIKA IZIN BERTINGKAT
             // 1. Posisi Ketua Tim (Draft / Revisi / Review Ketua)
-            //    - Anggota (Creator) AND Ketua Tim can edit.
+            //    - Anggota (Pembuat) DAN Ketua Tim bisa mengedit.
             if ($kk->status_approval == 'Draft' || 
                 str_starts_with($kk->status_approval, 'Revisi') || 
                 $kk->status_approval == 'Review Ketua') {
@@ -885,7 +956,7 @@ class KertasKerjaController extends Controller
                 if ($isCreator || $isKetua || str_contains(strtolower($roleInTeam), 'anggota')) $canEdit = true;
             }
             // 2. Posisi Dalnis (Review Dalnis)
-            //    - Only Dalnis can edit.
+            //    - Hanya Dalnis yang bisa mengedit.
             elseif ($kk->status_approval == 'Review Dalnis') {
                 $roleInTeam = \App\Models\StPersonel::where('st_id', $kk->st_id)
                     ->where('user_id', $user->id) 
@@ -894,7 +965,7 @@ class KertasKerjaController extends Controller
                 if ($roleInTeam == 'Dalnis') $canEdit = true;
             }
             // 3. Posisi Korwas (Review Korwas)
-            //    - Only Korwas can edit.
+            //    - Hanya Korwas yang bisa mengedit.
             elseif ($kk->status_approval == 'Review Korwas') {
                 $roleInTeam = \App\Models\StPersonel::where('st_id', $kk->st_id)
                     ->where('user_id', $user->id) 
@@ -907,25 +978,25 @@ class KertasKerjaController extends Controller
         if (!$canEdit) {
              return response()->json(['success' => false, 'message' => 'Status dokumen ini (' . $kk->status_approval . ') terkunci untuk Anda.'], 403);
         }
-        // Logic
+        // Logika
         $indikatorId = $request->indicator_id;
         $criteriaId = $request->criteria_id;
         $val = $request->value;
         $catatan = $request->catatan;
         $link = $request->link;
         
-        // 1. Find/Create Parent Answer
+        // 1. Cari/Buat Parent Answer
         $answer = \App\Models\KkAnswer::firstOrCreate(
             ['kertas_kerja_id' => $kk->id, 'indikator_id' => $indikatorId],
             ['nilai' => 0]
         );
 
-        // 2. Score Logic
+        // 2. Logika Skor
         $score = 0;
         if ($val === 'full') $score = 1.0;
         elseif ($val === 'partial') $score = 0.5;
 
-        // 3. File Upload (with Fallback)
+        // 3. File Upload (dengan Fallback)
         $evidenceFileCriteria = null;
         if ($request->hasFile('evidence')) {
             $cFile = $request->file('evidence');
@@ -960,39 +1031,39 @@ class KertasKerjaController extends Controller
             $updateArr
         );
 
-        // 5. Recalculate Parameter Score (branching by scoring method)
+        // 5. Hitung ulang Skor Parameter (bercabang berdasarkan metode penilaian)
         $metode = $kk->template->metode_penilaian ?? 'tally';
         $newParamScore = 0;
 
         if ($metode === 'tally') {
-            // Legacy: percentage tally
+            // Klasik: metode persentase
             $totalCriteriaDb = \App\Models\TemplateCriteria::where('indicator_id', $indikatorId)->count();
             $currentScoreSum = $answer->details()->sum('score');
             if ($totalCriteriaDb > 0) {
                 $newParamScore = ($currentScoreSum / $totalCriteriaDb) * 100;
             }
         } else {
-            // Level-based scoring (building_block or criteria_fulfillment)
+            // Penilaian berbasis level (building_block atau criteria_fulfillment)
             $newParamScore = $this->calculateLevelScore($kk, $indikatorId);
         }
 
         $answer->update(['nilai' => $newParamScore]);
 
-        // 6. Recalculate Rollup
+        // 6. Hitung ulang Rollup
         $this->calculateMrRollup($kk);
 
-        // 7. Gather rollup scores for real-time UI update
+        // 7. Kumpulkan skor rollup untuk pembaruan UI secara langsung
         $kk->refresh();
         $rollupScores = \App\Models\KkAnswer::where('kertas_kerja_id', $kk->id)
             ->where('catatan', 'Auto-calculated ROLLUP')
             ->pluck('nilai', 'indikator_id');
 
-        // Format score display based on method
+        // Format tampilan skor berdasarkan metode
         $paramScoreFormatted = $metode === 'tally'
             ? number_format($newParamScore, 0)
             : number_format($newParamScore, 2);
         
-        $finalScore = $kk->nilai_akhir; // Assuming nilai_akhir is updated by calculateMrRollup
+        $finalScore = $kk->nilai_akhir; // Berasumsi nilai_akhir diperbarui oleh calculateMrRollup
 
         $kk->update([
             'nilai_akhir' => $finalScore
@@ -1022,7 +1093,7 @@ class KertasKerjaController extends Controller
         $kk = \App\Models\KertasKerja::with(['suratTugas', 'reviewNotes.reviewer'])->findOrFail($id);
         $user = auth()->user();
 
-        // Check Authorization
+        // Cek Otorisasi
         $isSuperadmin = $user->hasRole('Superadmin');
         $isRendal = $user->hasRole('Rendal') || $user->hasRole('Admin Perwakilan');
         $isMemberOfTeam = \App\Models\StPersonel::where('st_id', $kk->st_id)
@@ -1036,13 +1107,13 @@ class KertasKerjaController extends Controller
         return view('kertas-kerja.review-sheet', compact('kk'));
     }
 
-    // QA Mode for Rendal & Team Response
+    // Mode QA untuk Rendal & Respon Tim
     public function qa($id)
     {
         $kertasKerja = \App\Models\KertasKerja::findOrFail($id);
         $user = auth()->user();
 
-        // Check Access: Rendal OR Team Member
+        // Cek Akses: Rendal ATAU Anggota Tim
         $isRendal = $user->hasRole('Rendal') || $user->hasRole('Admin Perwakilan') || $user->hasRole('Superadmin');
         
         $isMemberOfTeam = \App\Models\StPersonel::where('st_id', $kertasKerja->st_id)
@@ -1053,7 +1124,7 @@ class KertasKerjaController extends Controller
             abort(403, 'Anda tidak memiliki akses ke halaman QA ini.');
         }
 
-        // Reuse the edit logic/view but pass a flag 'isQaMode'
+        // Gunakan ulang logika/view edit tetapi dengan meneruskan flag 'isQaMode'
         $kertasKerja->load('template.indicators', 'answers.details');
 
         $indicators = \App\Models\TemplateIndicator::where('template_id', $kertasKerja->template_id)
@@ -1066,16 +1137,16 @@ class KertasKerjaController extends Controller
             ->orderBy('id')
             ->get();
 
-        $canEdit = false; // Regular edit disabled
-        $isQaMode = true; // Enable QA View
+        $canEdit = false; // Edit biasa dinonaktifkan
+        $isQaMode = true; // Aktifkan Tampilan QA
 
-        $canEdit = false; // Regular edit disabled
-        $isQaMode = true; // Enable QA View
+        $canEdit = false; // Edit biasa dinonaktifkan
+        $isQaMode = true; // Aktifkan Tampilan QA
         $isQaFinal = $kertasKerja->status_qa == 'Final';
 
-        // Determine permissions within QA Mode
-        // Rendal: Can Edit QA Score/Note IF NOT FINAL.
-        // Team: Can Edit Response IF NOT FINAL.
+        // Tentukan hak akses dalam Mode QA
+        // Rendal: Bisa Edit QA Score/Note JIKA BELUM FINAL.
+        // Tim: Bisa Edit Respon JIKA BELUM FINAL.
         $canEditQa = $isRendal && !$isQaFinal; 
         $canEditResponse = $isMemberOfTeam && !$isQaFinal; 
 
@@ -1088,7 +1159,7 @@ class KertasKerjaController extends Controller
         $kk = \App\Models\KertasKerja::findOrFail($id);
         $user = auth()->user();
 
-        // Only Rendal/Superadmin can finalize
+        // Hanya Rendal/Superadmin yang bisa finalisasi
         if (!$user->hasRole('Rendal') && !$user->hasRole('Admin Perwakilan') && !$user->hasRole('Superadmin')) {
             \Log::warning("Unauthorized Finalize Attempt by User: " . auth()->id() . " Role: " . ($user->role ? $user->role->name : 'None'));
             abort(403, 'Hanya Rendal yang dapat memfinalisasi QA.');
@@ -1107,7 +1178,7 @@ class KertasKerjaController extends Controller
         $kk = \App\Models\KertasKerja::findOrFail($id);
         $user = auth()->user();
 
-        // Only Rendal/Superadmin can UN-finalize
+        // Hanya Rendal/Superadmin yang bisa membatalkan finalisasi
         if (!$user->hasRole('Rendal') && !$user->hasRole('Superadmin')) {
              abort(403, 'Hanya Rendal/Superadmin yang dapat membatalkan finalisasi QA.');
         }
@@ -1123,16 +1194,16 @@ class KertasKerjaController extends Controller
         $kk = \App\Models\KertasKerja::findOrFail($id);
         $user = auth()->user();
 
-        // Only Superadmin, Korwas, Dalnis can un-finalize approval
+        // Hanya Superadmin, Korwas, Dalnis yang bisa membatalkan finalisasi status (approval)
         if (!$user->hasRole('Superadmin') && !$user->hasRole('Korwas') && !$user->hasRole('Dalnis')) {
              abort(403, 'Akses ditolak. Hanya Korwas/Dalnis yang dapat membatalkan status final.');
         }
 
-        // Set status to 'Review Korwas' (Back to Korwas Position)
-        // NOT Revisi, because Korwas wants to edit it or send it back manually.
+        // Atur status ke 'Review Korwas' (Kembali ke Posisi Korwas)
+        // BUKAN Revisi, karena Korwas ingin mengeditnya atau mengembalikannya ke Dalnis/Ketua Tim secara manual.
         $kk->update([
             'status_approval' => 'Review Korwas',
-            'status_qa' => 'Draft' // Reset QA too if it was Final
+            'status_qa' => 'Draft' // Reset QA juga jika sebelumnya Final
         ]);
         
         \Log::info("Approval Unfinalized (Revisi) by User: " . auth()->id() . " for KK ID: " . $id);
@@ -1145,13 +1216,13 @@ class KertasKerjaController extends Controller
         $kkId = $request->input('kk_id');
         $user = auth()->user();
         
-        // Prevent update if Final
+        // Cegah update jika Final
         $kk = \App\Models\KertasKerja::findOrFail($kkId);
         if ($kk->status_qa == 'Final') {
             return response()->json(['success' => false, 'message' => 'QA sudah final. Tidak dapat diubah.'], 403);
         }
 
-        // Authorization: Rendal/Superadmin OR Team Member
+        // Otorisasi: Rendal/Superadmin ATAU Anggota Tim
         $isRendal = $user->hasRole('Rendal') || $user->hasRole('Superadmin') || $user->hasRole('Admin Perwakilan');
         $isMemberOfTeam = \App\Models\StPersonel::where('st_id', $kk->st_id)->where('user_id', $user->id)->exists();
 
@@ -1162,7 +1233,7 @@ class KertasKerjaController extends Controller
         $criteriaId = $request->input('criteria_id');
         $tanggapan = $request->input('tanggapan_qa');
 
-        // Find existing answer/detail (must exist if QA is done, or at least structure exists)
+        // Temukan jawaban/detail yang ada (seharusnya ada jika QA dikerjakan, atau minimal strukturnya ada)
         $criteria = \App\Models\TemplateCriteria::findOrFail($criteriaId);
         $answer = \App\Models\KkAnswer::firstOrCreate(
             ['kertas_kerja_id' => $kkId, 'indikator_id' => $criteria->indicator_id]
@@ -1184,13 +1255,13 @@ class KertasKerjaController extends Controller
     {
         $kk = \App\Models\KertasKerja::findOrFail($id);
         
-        // Loop through inputs
-        // Expected name="qa[criteria_id][score_qa]" and "qa[criteria_id][catatan_qa]"
-        // But likely simpler to process individual AJAX requests or a bulk save.
-        // Let's assume bulk save for now or use the existing updateSingle pattern adapted.
+        // Lakukan pengulangan melalui input-input
+        // Format yang diharapkan: name="qa[criteria_id][score_qa]" dan "qa[criteria_id][catatan_qa]"
+        // Namun sepertinya lebih sederhana memproses setiap request AJAX secara individual atau secara bulk (massal).
+        // Mari kita asumsikan simpan massal (bulk) untuk saat ini, atau kita gunakan pola updateSingle.
         
-        // Actually, let's implement a single update method for QA similar to updateSingle
-        // But for clarity let's check what the request has.
+        // Sebenarnya, sebaiknya kita implementasikan metode update individual untuk QA yang mirip dengan updateSingle
+        // Namun untuk kejelasannya, mari kita cek dulu isi request.
     }
 
     public function updateQaSingle(Request $request) 
@@ -1200,8 +1271,8 @@ class KertasKerjaController extends Controller
         
         $kk = \App\Models\KertasKerja::findOrFail($kkId);
         
-        // Ensure Answer Parent exists (it should, as only Final KKs are QA'd)
-        // But to be safe:
+        // Pastikan Parent Answer ada (seharusnya begitu, karena hanya KK Final yang di-QA)
+        // Namun untuk berjaga-jaga:
         $criteria = \App\Models\TemplateCriteria::findOrFail($criteriaId);
         $answer = \App\Models\KkAnswer::firstOrCreate(
             ['kertas_kerja_id' => $kkId, 'indikator_id' => $criteria->indicator_id],
@@ -1213,7 +1284,7 @@ class KertasKerjaController extends Controller
             ->first();
 
         if (!$detail) {
-            // Should create detail if not exists (rare case)
+            // Seharusnya membuat detail jika tidak ada (meski kasus ini jarang terjadi)
              $detail = \App\Models\KkAnswerDetail::create([
                 'kk_answer_id' => $answer->id,
                 'criteria_id' => $criteriaId,
@@ -1222,11 +1293,11 @@ class KertasKerjaController extends Controller
             ]);
         }
 
-        // Logic check: Is this a Value update (Radio) or Note update?
+        // Cek Logika: Apakah ini pembaruan Skor QA (Radio) atau pembaruan Catatan QA?
         if ($request->has('qa_value')) {
             $qaValue = $request->input('qa_value');
             
-            // Calculate Score QA based on Value
+            // Hitung Score QA berdasarkan Opsi Terpilih
             $scoreQa = 0;
             if ($qaValue === 'full') $scoreQa = 100;
             elseif ($qaValue === 'partial') $scoreQa = 50;
@@ -1241,51 +1312,23 @@ class KertasKerjaController extends Controller
 
         $detail->save();
 
-        // Recalculate Parameter Score (QA)
-        // Same logic as normal score but using score_qa
-        // 1. Get all details for this answer
+        // Hitung ulang Skor Parameter (QA)
+        // Logikanya sama dengan skor normal tetapi menggunakan score_qa
+        // 1. Ambil semua rincian detail untuk jawaban ini
         $details = $answer->details;
         $totalCriteria = \App\Models\TemplateCriteria::where('indicator_id', $criteria->indicator_id)->count();
         
-        // We need to handle null score_qa. If null, fallback to original score? 
-        // Or treat as 0? Or user MUST fill all?
-        // Assumption: If QA starts, it might be partial. 
-        // Let's sum score_qa if not null, else use original score?
-        // NO. Better to keep them independent. If score_qa is null, it counts as 0 or we init with original?
-        // Let's assume for now: aggregate only known QA scores. 
-        // BUT user expects to see a full score.
-        // Better strategy: When creating QA record, maybe init with original?
-        // OR: In calculation, if score_qa is null, use score (original).
-        // This implies "No Correction" = "Agree with Team".
+        // Kita perlu menangani nilai score_qa jika null. Apakah harus fallback ke skor asli (Tim)? 
+        // Atau dianggap 0? Atau apakah user DIHARUSKAN mengisi semua?
+        // Asumsi: Jika proses QA baru dimulai, QA ini mungkin dilakukan bertahap (parsial). 
+        // Apakah kita jumlahkan score_qa jika tidak null, jika null gunakan skor asli?
+        // TIDAK. Lebih baik kita memisahkan logika perhitungannya secara independen.
+        // Terlalu banyak pengecekan panjang jika nilai QA dihitung sebagai campuran.
+        // Namun user mungkin menduga jika tidak disentuh nilainya tetap penuh.
         
+        // Daripada membingungkan score QA dan form, fallback langsung ke Team Score:
         $sumScoreQa = 0;
-        foreach ($details as $d) {
-            $val = $d->score_qa !== null ? $d->score_qa : $d->score; // Fallback to Team Score
-            // Note: $d->score is 0-1 (e.g., 1.0 or 0.5), while we decided score_qa is 0-100 based on previous logic?
-            // Wait, standard updateSingle uses 1.0/0.5 for score column.
-            // AND then multiplies by 100 for parameter score.
-            // Let's align. $detail->score in DB is likely float 0-1.
-            // Let's check updateSingle: 
-            // $score = 1.0; ... 'score' => $score
-            // $newParamScore = ($currentScoreSum / $totalCriteriaDb) * 100;
-            
-            // So for QA:
-            // if qa_value=full -> score_qa=1.0? Or 100?
-            // The DB column score_qa is decimal(5,2).
-            // Let's use 1.0 scale to be consistent with `score` column if we want to mix.
-            // BUT the User Request said "100/50/0". 
-            // If I change score_qa to 100, I can't mix with score easily.
-            // Let's stick to 0-100 for score_qa as stored in DB for clarity in "Nilai QA".
-            
-            // Correction: The `input` view showed `value="{{ $scoreQa ... }}"`.
-            // If we use Radio, we don't input score manually anymore.
-            // Let's use 100 scale for `score_qa` column to avoid confusion.
-            // And when using fallback, multiply original `score` (0-1) by 100.
-            
-            // wait, `score` in `kk_answer_details` might be 0-1.
-            // Let's check updateSingle again.
-            // Yes: $score = 1.0;
-            
+        foreach ($details as $d) {    
             if ($d->score_qa !== null) {
                 $sumScoreQa += $d->score_qa;
             } else {
@@ -1306,14 +1349,14 @@ class KertasKerjaController extends Controller
         return response()->json([
             'success' => true, 
             'message' => 'QA tersimpan.',
-            'qa_score' => $detail->score_qa, // Send back so UI can update if needed (though UI handles radio)
+            'qa_score' => $detail->score_qa, // Kirim balik skor ini agar UI dapat diperbarui jika diperlukan
             'param_score_qa' => number_format($newParamScoreQa, 2)
         ]);
     }
 
     private function calculateQaRollup(\App\Models\KertasKerja $kk)
     {
-        // Clone of calculateMrRollup but for QA
+        // Kliping dari calculateMrRollup tapi untuk level QA
         $template = $kk->template;
         if (!$template) return;
 
@@ -1339,7 +1382,7 @@ class KertasKerjaController extends Controller
                         ->where('indikator_id', $param->id)
                         ->first();
                     
-                    // Fallback: If nilai_qa is null, use nilai
+                    // Fallback: Jika nilai_qa adalah null, gunakan nilai standar (nilai tim)
                     $score = ($ans && $ans->nilai_qa !== null) ? $ans->nilai_qa : ($ans ? $ans->nilai : 0);
                     $weight = $param->bobot ?? 0;
 
@@ -1350,8 +1393,8 @@ class KertasKerjaController extends Controller
                 $totalParamWeight = array_sum($paramWeights);
                 $indScore = $totalParamWeight > 0 ? (array_sum($paramScores) / $totalParamWeight) : 0;
                 
-                // Save Indicator QA Score (We don't have separate table, so update KkAnswer virtual record)
-                // Use updateOrCreate on KkAnswer
+                // Simpan Skor Tingkat Indikator QA (Virtual record seperti halnya KK asli)
+                // Gunakan fungsi updateOrCreate terhadap tabel KkAnswer
                 $ansInd = \App\Models\KkAnswer::firstOrCreate(
                     ['kertas_kerja_id' => $kk->id, 'indikator_id' => $ind->id]
                 );

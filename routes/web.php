@@ -45,6 +45,15 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('/kertas-kerja/update-tanggapan-qa', [\App\Http\Controllers\KertasKerjaController::class, 'updateTanggapanQa'])->name('kertas-kerja.update-tanggapan-qa');
     Route::post('/kertas-kerja/{id}/finalize-qa', [\App\Http\Controllers\KertasKerjaController::class, 'finalizeQa'])->name('kertas-kerja.finalize-qa');
     
+    // Matriks Temuan (Transaksi)
+    Route::get('/findings/dashboard', [App\Http\Controllers\FindingDashboardController::class, 'index'])->name('findings.dashboard');
+    Route::post('/kertas-kerja/teos', [App\Http\Controllers\KkFindingController::class, 'storeTeo'])->name('kertas-kerja.teos.store');
+    Route::delete('/kertas-kerja/teos/{teo}', [App\Http\Controllers\KkFindingController::class, 'destroyTeo'])->name('kertas-kerja.teos.destroy');
+    Route::get('/kertas-kerja/teos/{teo}/template-data', [App\Http\Controllers\KkFindingController::class, 'getTeoTemplateData'])->name('kertas-kerja.teos.template-data');
+    
+    Route::post('/kertas-kerja/findings', [App\Http\Controllers\KkFindingController::class, 'store'])->name('kertas-kerja.findings.store');
+    Route::delete('/kertas-kerja/findings/{finding}', [App\Http\Controllers\KkFindingController::class, 'destroy'])->name('kertas-kerja.findings.destroy');
+    
     // Excel Export/Import
     Route::get('/kertas-kerja/{id}/export-excel', [App\Http\Controllers\KertasKerjaController::class, 'exportExcel'])->name('kertas-kerja.export-excel');
     Route::post('/kertas-kerja/{id}/import-excel', [App\Http\Controllers\KertasKerjaController::class, 'importExcel'])->name('kertas-kerja.import-excel');
@@ -96,6 +105,19 @@ Route::group(['middleware' => ['auth']], function () {
     Route::post('indicators/{indicator}/langkah', [App\Http\Controllers\TemplateLangkahController::class, 'store'])->name('templates.langkah.store');
     Route::put('template-langkah/{langkah}', [App\Http\Controllers\TemplateLangkahController::class, 'update'])->name('templates.langkah.update');
     Route::delete('template-langkah/{langkah}', [App\Http\Controllers\TemplateLangkahController::class, 'destroy'])->name('templates.langkah.destroy');
+
+    // Matriks Temuan Standar (Template)
+    Route::post('indicators/{indicator}/teos', [App\Http\Controllers\TemplateFindingController::class, 'storeTeo'])->name('templates.teos.store');
+    Route::put('template-teos/{teo}', [App\Http\Controllers\TemplateFindingController::class, 'updateTeo'])->name('templates.teos.update');
+    Route::delete('template-teos/{teo}', [App\Http\Controllers\TemplateFindingController::class, 'destroyTeo'])->name('templates.teos.destroy');
+    
+    Route::post('template-teos/{teo}/causes', [App\Http\Controllers\TemplateFindingController::class, 'storeCause'])->name('templates.causes.store');
+    Route::delete('template-causes/{cause}', [App\Http\Controllers\TemplateFindingController::class, 'destroyCause'])->name('templates.causes.destroy');
+    
+    Route::post('template-teos/{teo}/recommendations', [App\Http\Controllers\TemplateFindingController::class, 'storeRecommendation'])->name('templates.recommendations.store');
+    Route::delete('template-recommendations/{recommendation}', [App\Http\Controllers\TemplateFindingController::class, 'destroyRecommendation'])->name('templates.recommendations.destroy');
+    
+    Route::post('template-causes/{cause}/sync-recommendations', [App\Http\Controllers\TemplateFindingController::class, 'syncCauseRecommendations'])->name('templates.causes.sync-recs');
     
     Route::resource('templates', App\Http\Controllers\TemplateController::class);
 

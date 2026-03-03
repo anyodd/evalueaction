@@ -245,6 +245,22 @@ body {
     color: #f39c12 !important;
 }
 
+.text-navy {
+    color: #001f3f !important;
+}
+
+.border-navy {
+    border-color: #001f3f !important;
+}
+
+.dropdown-item {
+    color: #334155 !important;
+}
+
+.dropdown-item i {
+    width: 20px;
+}
+
 /* Premium Scrollbar */
 ::-webkit-scrollbar {
     width: 8px;

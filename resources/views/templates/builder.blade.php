@@ -231,6 +231,92 @@
                                                         </div>
                                                     </div>
                                                 </div>
+
+                                                {{-- Matriks Temuan Section --}}
+                                                <div class="mt-2 pl-3 pt-2 border-top">
+                                                    <h6 class="text-xs font-weight-bold text-secondary mb-2 text-uppercase d-flex justify-content-between">
+                                                        <span><i class="fas fa-exclamation-triangle mr-1 text-warning"></i> Matriks Temuan Standar (Root Cause Analysis)</span>
+                                                        <button type="button" class="btn btn-xs btn-link p-0 text-warning btn-add-teo" data-indicator="{{ $parameter->id }}">
+                                                            <i class="fas fa-plus-circle mr-1"></i> Tambah TEO
+                                                        </button>
+                                                    </h6>
+                                                    <div id="teo-list-{{ $parameter->id }}" class="row">
+                                                        @foreach($parameter->teos as $teo)
+                                                            <div class="col-md-12 mb-3 teo-card" id="teo-{{ $teo->id }}">
+                                                                <div class="card mb-0 shadow-none border" style="background-color: #fffdf5;">
+                                                                    <div class="card-header p-2 bg-transparent d-flex justify-content-between align-items-center border-bottom">
+                                                                        <span class="text-sm font-weight-bold text-navy">
+                                                                            <i class="fas fa-bullseye mr-1 text-warning"></i> 
+                                                                            TEO: <span class="teo-text" data-id="{{ $teo->id }}">{{ $teo->teo }}</span>
+                                                                        </span>
+                                                                        <div>
+                                                                            <button type="button" class="btn btn-xs btn-outline-primary btn-modal-cause" data-teo="{{ $teo->id }}" title="Tambah Penyebab">
+                                                                                <i class="fas fa-plus mr-1"></i> Penyebab
+                                                                            </button>
+                                                                            <button type="button" class="btn btn-xs btn-outline-success btn-modal-rec" data-teo="{{ $teo->id }}" title="Tambah Rekomendasi">
+                                                                                <i class="fas fa-plus mr-1"></i> Rekomendasi
+                                                                            </button>
+                                                                            <button type="button" class="btn btn-xs text-info btn-edit-teo" data-id="{{ $teo->id }}" data-teo="{{ $teo->teo }}">
+                                                                                <i class="fas fa-edit"></i>
+                                                                            </button>
+                                                                            <button type="button" class="btn btn-xs text-danger btn-delete-teo" data-id="{{ $teo->id }}">
+                                                                                <i class="fas fa-trash"></i>
+                                                                            </button>
+                                                                        </div>
+                                                                    </div>
+                                                                    <div class="card-body p-2">
+                                                                        <div class="row">
+                                                                            <div class="col-md-6 border-right">
+                                                                                <small class="text-xs text-muted font-weight-bold text-uppercase">Penyebab (Root Cause)</small>
+                                                                                <div id="cause-list-{{ $teo->id }}" class="mt-1">
+                                                                                    @foreach($teo->causes as $cause)
+                                                                                        <div class="d-flex justify-content-between align-items-start mb-1 p-1 rounded cause-item hover-bg-light" id="cause-{{ $cause->id }}">
+                                                                                            <span class="text-xs">
+                                                                                                <i class="fas fa-minus mr-1 text-secondary"></i> {{ $cause->uraian }}
+                                                                                                <br>
+                                                                                                <small class="text-muted ml-3">
+                                                                                                    <i class="fas fa-link mr-1"></i> {{ $cause->recommendations->count() }} Rekomendasi
+                                                                                                </small>
+                                                                                            </span>
+                                                                                            <div class="d-flex">
+                                                                                                <button type="button" class="btn btn-xs btn-link p-0 text-info mr-2 btn-link-rec" 
+                                                                                                    data-id="{{ $cause->id }}" 
+                                                                                                    data-teo="{{ $teo->id }}" 
+                                                                                                    data-uraian="{{ $cause->uraian }}"
+                                                                                                    data-selected="{{ $cause->recommendations->pluck('id')->join(',') }}"
+                                                                                                    title="Hubungkan ke Rekomendasi">
+                                                                                                    <i class="fas fa-network-wired"></i>
+                                                                                                </button>
+                                                                                                <button type="button" class="btn btn-xs btn-link p-0 text-danger btn-delete-cause" data-id="{{ $cause->id }}">
+                                                                                                    <i class="fas fa-times"></i>
+                                                                                                </button>
+                                                                                            </div>
+                                                                                        </div>
+                                                                                    @endforeach
+                                                                                </div>
+                                                                            </div>
+                                                                            <div class="col-md-6">
+                                                                                <small class="text-xs text-muted font-weight-bold text-uppercase">Rekomendasi (AoI)</small>
+                                                                                <div id="rec-list-{{ $teo->id }}" class="mt-1">
+                                                                                    @foreach($teo->recommendations as $rec)
+                                                                                        <div class="d-flex justify-content-between align-items-start mb-1 p-1 rounded rec-item hover-bg-light" id="rec-{{ $rec->id }}">
+                                                                                            <span class="text-xs">
+                                                                                                <i class="fas fa-check-circle mr-1 text-success"></i> {{ $rec->uraian }}
+                                                                                            </span>
+                                                                                            <button type="button" class="btn btn-xs btn-link p-0 text-danger btn-delete-rec" data-id="{{ $rec->id }}">
+                                                                                                <i class="fas fa-times"></i>
+                                                                                            </button>
+                                                                                        </div>
+                                                                                    @endforeach
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        @endforeach
+                                                    </div>
+                                                </div>
                                             </div>
                                         @endforeach
 
@@ -323,6 +409,83 @@
                     <div class="modal-footer py-2 bg-light">
                         <button type="button" class="btn btn-xs btn-secondary" data-dismiss="modal">Batal</button>
                         <button type="submit" class="btn btn-xs btn-info px-3"><i class="fas fa-save mr-1"></i> Update</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- Modal TEO --}}
+    <div class="modal fade" id="teoModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <form id="teoForm" method="POST">
+                @csrf
+                <input type="hidden" name="_method" id="teoMethod" value="POST">
+                <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+                    <div class="modal-header bg-warning py-2">
+                        <h6 class="modal-title font-weight-bold text-navy"><i class="fas fa-bullseye mr-2"></i> <span id="teoModalTitle">Tambah TEO (Permasalahan)</span></h6>
+                        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group mb-0">
+                            <label class="text-sm">Uraian TEO <span class="text-danger">*</span></label>
+                            <textarea name="teo" id="teoInput" class="form-control form-control-sm" rows="3" placeholder="Contoh: Pengelolaan aset belum memadai..." required></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer py-2 bg-light">
+                        <button type="button" class="btn btn-xs btn-secondary" data-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-xs btn-warning px-4 font-weight-bold" id="btnSubmitTeo">Simpan TEO</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- Modal Cause/Rec --}}
+    <div class="modal fade" id="causeRecModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <form id="causeRecForm" method="POST">
+                @csrf
+                <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+                    <div class="modal-header py-2" id="causeRecHeader">
+                        <h6 class="modal-title font-weight-bold"><span id="causeRecModalTitle">Tambah Item</span></h6>
+                        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="form-group mb-0">
+                            <label class="text-sm">Uraian <span class="text-danger">*</span></label>
+                            <textarea name="uraian" id="causeRecInput" class="form-control form-control-sm" rows="3" required></textarea>
+                        </div>
+                    </div>
+                    <div class="modal-footer py-2 bg-light">
+                        <button type="button" class="btn btn-xs btn-secondary" data-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-xs px-4 font-weight-bold text-white" id="btnSubmitCauseRec">Simpan</button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    {{-- Modal Linker (Pivot Cause -> Recommendation) --}}
+    <div class="modal fade" id="linkerModal" tabindex="-1" role="dialog">
+        <div class="modal-dialog" role="document">
+            <form id="linkerForm" method="POST">
+                @csrf
+                <div class="modal-content border-0 shadow-lg" style="border-radius: 12px;">
+                    <div class="modal-header bg-info py-2">
+                        <h6 class="modal-title font-weight-bold text-white"><i class="fas fa-link mr-2"></i> Hubungkan ke Rekomendasi</h6>
+                        <button type="button" class="close" data-dismiss="modal"><span>&times;</span></button>
+                    </div>
+                    <div class="modal-body">
+                        <p class="text-xs text-muted mb-2"><b>Penyebab:</b> <span id="linkerCauseText"></span></p>
+                        <label class="text-sm d-block border-bottom pb-1 mb-2">Pilih Rekomendasi yang relevan:</label>
+                        <div id="linkerRecOptions" style="max-height: 300px; overflow-y: auto;">
+                            {{-- Checkboxes will be injected here --}}
+                        </div>
+                    </div>
+                    <div class="modal-footer py-2 bg-light">
+                        <button type="button" class="btn btn-xs btn-secondary" data-dismiss="modal">Batal</button>
+                        <button type="submit" class="btn btn-xs btn-info px-4 font-weight-bold" id="btnSubmitLinker">Simpan Kaitan</button>
                     </div>
                 </div>
             </form>
@@ -779,6 +942,211 @@ $(document).ready(function() {
                     error: function() { toastr.error('Gagal menghapus langkah'); }
                 });
             }
+        });
+    });
+
+    // ─── Matriks Temuan (TEO -> Cause -> Rec) Management ───
+    $('#teoModal, #causeRecModal, #linkerModal').appendTo("body");
+
+    $(document).on('click', '.btn-add-teo', function() {
+        var indicatorId = $(this).data('indicator');
+        $('#teoModalTitle').text('Tambah TEO (Permasalahan)');
+        $('#teoForm').attr('action', '/templates/indicators/' + indicatorId + '/teos');
+        $('#teoMethod').val('POST');
+        $('#teoForm')[0].reset();
+        $('#teoModal').modal('show');
+    });
+
+    $(document).on('click', '.btn-edit-teo', function() {
+        var btn = $(this);
+        var id = btn.data('id');
+        $('#teoModalTitle').text('Edit TEO (Permasalahan)');
+        $('#teoForm').attr('action', '/templates/teos/' + id);
+        $('#teoMethod').val('PUT');
+        $('#teoInput').val(btn.data('teo'));
+        $('#teoModal').modal('show');
+    });
+
+    $('#teoForm').on('submit', function(e) {
+        e.preventDefault();
+        var form = $(this);
+        var btn = $('#btnSubmitTeo');
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Menyimpan...');
+
+        $.ajax({
+            url: form.attr('action'),
+            type: 'POST',
+            data: form.serialize(),
+            success: function(resp) {
+                if (resp.success) {
+                    $('#teoModal').modal('hide');
+                    toastr.success(resp.message);
+                    location.reload(); 
+                }
+            },
+            error: function(xhr) { toastr.error(xhr.responseJSON?.message || 'Gagal menyimpan TEO'); },
+            complete: function() { btn.prop('disabled', false).text('Simpan TEO'); }
+        });
+    });
+
+    $(document).on('click', '.btn-delete-teo', function() {
+        var id = $(this).data('id');
+        var card = $('#teo-' + id);
+        Swal.fire({
+            title: 'Hapus TEO?',
+            text: 'Semua penyebab dan rekomendasi di dalamnya akan ikut dihapus.',
+            icon: 'warning',
+            showCancelButton: true,
+            confirmButtonColor: '#d33',
+            confirmButtonText: 'Ya, Hapus'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                $.ajax({
+                    url: '/templates/teos/' + id,
+                    type: 'POST',
+                    data: { _method: 'DELETE', _token: '{{ csrf_token() }}' },
+                    success: function(resp) {
+                        if (resp.success) {
+                            card.fadeOut(300, function() { $(this).remove(); });
+                            toastr.success('TEO dihapus');
+                        }
+                    },
+                    error: function() { toastr.error('Gagal menghapus TEO'); }
+                });
+            }
+        });
+    });
+
+    // --- Cause & Rec Modals ---
+    $(document).on('click', '.btn-modal-cause', function() {
+        var teoId = $(this).data('teo');
+        $('#causeRecModalTitle').text('Tambah Penyebab (Root Cause)');
+        $('#causeRecHeader').removeClass('bg-success').addClass('bg-primary');
+        $('#causeRecForm').attr('action', '/templates/teos/' + teoId + '/causes');
+        $('#btnSubmitCauseRec').removeClass('btn-success').addClass('btn-primary').text('Simpan Penyebab');
+        $('#causeRecForm')[0].reset();
+        $('#causeRecModal').modal('show');
+    });
+
+    $(document).on('click', '.btn-modal-rec', function() {
+        var teoId = $(this).data('teo');
+        $('#causeRecModalTitle').text('Tambah Rekomendasi (AoI)');
+        $('#causeRecHeader').removeClass('bg-primary').addClass('bg-success');
+        $('#causeRecForm').attr('action', '/templates/teos/' + teoId + '/recommendations');
+        $('#btnSubmitCauseRec').removeClass('btn-primary').addClass('btn-success').text('Simpan Rekomendasi');
+        $('#causeRecForm')[0].reset();
+        $('#causeRecModal').modal('show');
+    });
+
+    $('#causeRecForm').on('submit', function(e) {
+        e.preventDefault();
+        var form = $(this);
+        var btn = $('#btnSubmitCauseRec');
+        btn.prop('disabled', true).html('<i class="fas fa-spinner fa-spin mr-1"></i> Menyimpan...');
+
+        $.ajax({
+            url: form.attr('action'),
+            type: 'POST',
+            data: form.serialize(),
+            success: function(resp) {
+                if (resp.success) {
+                    $('#causeRecModal').modal('hide');
+                    toastr.success(resp.message);
+                    location.reload(); 
+                }
+            },
+            error: function(xhr) { toastr.error(xhr.responseJSON?.message || 'Gagal menyimpan item'); },
+            complete: function() { btn.prop('disabled', false).text('Simpan'); }
+        });
+    });
+
+    $(document).on('click', '.btn-delete-cause', function() {
+        var id = $(this).data('id');
+        var item = $('#cause-' + id);
+        $.ajax({
+            url: '/templates/causes/' + id,
+            type: 'POST',
+            data: { _method: 'DELETE', _token: '{{ csrf_token() }}' },
+            success: function(resp) {
+                if (resp.success) {
+                    item.fadeOut(200, function() { $(this).remove(); });
+                    toastr.success('Penyebab dihapus');
+                }
+            }
+        });
+    });
+
+    $(document).on('click', '.btn-delete-rec', function() {
+        var id = $(this).data('id');
+        var item = $('#rec-' + id);
+        $.ajax({
+            url: '/templates/recommendations/' + id,
+            type: 'POST',
+            data: { _method: 'DELETE', _token: '{{ csrf_token() }}' },
+            success: function(resp) {
+                if (resp.success) {
+                    item.fadeOut(200, function() { $(this).remove(); });
+                    toastr.success('Rekomendasi dihapus');
+                }
+            }
+        });
+    });
+
+    // --- Linker Management ---
+    $(document).on('click', '.btn-link-rec', function() {
+        var causeId = $(this).data('id');
+        var teoId = $(this).data('teo');
+        var uraian = $(this).data('uraian');
+        var selectedIds = ($(this).data('selected') + '').split(',');
+
+        $('#linkerCauseText').text(uraian);
+        $('#linkerForm').attr('action', '/templates/causes/' + causeId + '/sync-recommendations');
+        
+        // Get all recommendations for this TEO
+        var recContainer = $('#linkerRecOptions');
+        recContainer.empty();
+        
+        $('#rec-list-' + teoId + ' .rec-item').each(function() {
+            var recId = $(this).attr('id').replace('rec-', '');
+            var recText = $(this).find('span').text().trim();
+            var checked = selectedIds.includes(recId) ? 'checked' : '';
+            
+            recContainer.append(`
+                <div class="custom-control custom-checkbox mb-1">
+                    <input class="custom-control-input" type="checkbox" name="recommendation_ids[]" id="chk-rec-${recId}" value="${recId}" ${checked}>
+                    <label class="custom-control-label text-xs font-weight-normal" for="chk-rec-${recId}">
+                        ${recText}
+                    </label>
+                </div>
+            `);
+        });
+
+        if (recContainer.children().length === 0) {
+            recContainer.html('<p class="text-xs text-danger">Belum ada Rekomendasi di TEO ini.</p>');
+        }
+
+        $('#linkerModal').modal('show');
+    });
+
+    $('#linkerForm').on('submit', function(e) {
+        e.preventDefault();
+        var form = $(this);
+        var btn = $('#btnSubmitLinker');
+        btn.prop('disabled', true);
+
+        $.ajax({
+            url: form.attr('action'),
+            type: 'POST',
+            data: form.serialize(),
+            success: function(resp) {
+                if (resp.success) {
+                    $('#linkerModal').modal('hide');
+                    toastr.success(resp.message);
+                    location.reload(); 
+                }
+            },
+            error: function() { toastr.error('Gagal memperbarui kaitan'); },
+            complete: function() { btn.prop('disabled', false); }
         });
     });
 
