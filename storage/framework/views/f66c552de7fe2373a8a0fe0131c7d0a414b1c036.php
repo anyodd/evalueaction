@@ -1,8 +1,8 @@
-@extends('adminlte::auth.auth-page', ['authType' => 'login'])
 
-@section('adminlte_css_pre')
+
+<?php $__env->startSection('adminlte_css_pre'); ?>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/icheck-bootstrap/3.0.1/icheck-bootstrap.min.css">
-    <link rel="stylesheet" href="{{ asset('css/custom.css') }}?v=1.1">
+    <link rel="stylesheet" href="<?php echo e(asset('css/custom.css')); ?>?v=1.1">
     <style>
         .login-page {
             background: #ffffff !important;
@@ -33,7 +33,7 @@
         .shape-3 { width: 250px; height: 250px; top: 20%; right: 10%; animation-duration: 35s; }
         .shape-4 { width: 150px; height: 150px; bottom: 30%; left: 15%; animation-duration: 20s; animation-direction: reverse; }
 
-        @keyframes float {
+        @keyframes  float {
             0% { transform: translate(0, 0) rotate(0deg) scale(1); }
             33% { transform: translate(30px, 50px) rotate(120deg) scale(1.1); }
             66% { transform: translate(-20px, 20px) rotate(240deg) scale(0.9); }
@@ -78,9 +78,9 @@
             .logo-dan { right: 15px; }
         }
     </style>
-@stop
+<?php $__env->stopSection(); ?>
 
-@section('auth_header')
+<?php $__env->startSection('auth_header'); ?>
     <div class="bg-shapes">
         <div class="shape shape-1"></div>
         <div class="shape shape-2"></div>
@@ -91,65 +91,93 @@
         <span class="brand-e">e</span><span class="brand-value" style="color: #FFD700;">value</span><span class="brand-a">a</span><span class="brand-ctio">ctio</span><span class="brand-n">n</span>
     </div>
     <p class="login-box-msg pb-2">Silakan Masuk untuk Memulai Sesi</p>
-@stop
+<?php $__env->stopSection(); ?>
 
-@section('auth_body')
-    <form action="{{ route('login') }}" method="post">
-        @csrf
+<?php $__env->startSection('auth_body'); ?>
+    <form action="<?php echo e(route('login')); ?>" method="post">
+        <?php echo csrf_field(); ?>
 
-        {{-- Email field --}}
+        
         <div class="input-group mb-3">
-            <input type="email" name="email" class="form-control @error('email') is-invalid @enderror"
-                   value="{{ old('email') }}" placeholder="Email" autofocus>
+            <input type="email" name="email" class="form-control <?php $__errorArgs = ['email'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>"
+                   value="<?php echo e(old('email')); ?>" placeholder="Email" autofocus>
             <div class="input-group-append">
                 <div class="input-group-text">
-                    <span class="fas fa-envelope {{ config('adminlte.classes_auth_icon', '') }}"></span>
+                    <span class="fas fa-envelope <?php echo e(config('adminlte.classes_auth_icon', '')); ?>"></span>
                 </div>
             </div>
-            @error('email')
+            <?php $__errorArgs = ['email'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
                 <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
+                    <strong><?php echo e($message); ?></strong>
                 </span>
-            @enderror
+            <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
         </div>
 
-        {{-- Password field --}}
+        
         <div class="input-group mb-3">
-            <input type="password" name="password" class="form-control @error('password') is-invalid @enderror"
+            <input type="password" name="password" class="form-control <?php $__errorArgs = ['password'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>"
                    placeholder="Kata Sandi">
             <div class="input-group-append">
                 <div class="input-group-text">
-                    <span class="fas fa-lock {{ config('adminlte.classes_auth_icon', '') }}"></span>
+                    <span class="fas fa-lock <?php echo e(config('adminlte.classes_auth_icon', '')); ?>"></span>
                 </div>
             </div>
-            @error('password')
+            <?php $__errorArgs = ['password'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
                 <span class="invalid-feedback" role="alert">
-                    <strong>{{ $message }}</strong>
+                    <strong><?php echo e($message); ?></strong>
                 </span>
-            @enderror
+            <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
         </div>
 
-        {{-- Login field --}}
+        
         <div class="row">
             <div class="col-7">
                 <div class="icheck-primary" title="Tetap masuk">
-                    <input type="checkbox" name="remember" id="remember" {{ old('remember') ? 'checked' : '' }}>
+                    <input type="checkbox" name="remember" id="remember" <?php echo e(old('remember') ? 'checked' : ''); ?>>
                     <label for="remember">
                         Ingat Saya
                     </label>
                 </div>
             </div>
             <div class="col-5">
-                <button type=submit class="btn btn-block {{ config('adminlte.classes_auth_btn', 'btn-flat btn-primary') }}">
+                <button type=submit class="btn btn-block <?php echo e(config('adminlte.classes_auth_btn', 'btn-flat btn-primary')); ?>">
                     <span class="fas fa-sign-in-alt"></span>
                     Masuk
                 </button>
             </div>
         </div>
     </form>
-@stop
+<?php $__env->stopSection(); ?>
 
-@section('auth_footer')
+<?php $__env->startSection('auth_footer'); ?>
     <p class="text-sm text-muted text-center mt-2 mb-3" style="line-height: 1.4;">
         <i>"Deputi Akuntan Negara memberikan nilai tambah melalui kegiatan monitoring dan evaluasi"</i>
     </p>
@@ -159,9 +187,10 @@
         </a>
     </p>
 
-    {{-- Fixed Logos with Fallbacks --}}
-    <img src="{{ asset('img/bpkp_logo.png') }}" alt="Logo BPKP" class="logo-fixed logo-bpkp" 
+    
+    <img src="<?php echo e(asset('img/bpkp_logo.png')); ?>" alt="Logo BPKP" class="logo-fixed logo-bpkp" 
          onerror="this.src='https://placehold.jp/24/1e3a8a/ffffff/200x80.png?text=LOGO BPKP'">
-    <img src="{{ asset('img/deputian_logo.png') }}" alt="Logo Deputi AN" class="logo-fixed logo-dan" 
+    <img src="<?php echo e(asset('img/deputian_logo.png')); ?>" alt="Logo Deputi AN" class="logo-fixed logo-dan" 
          onerror="this.src='https://placehold.jp/24/065f46/ffffff/200x80.png?text=LOGO DEPUTI AN'">
-@stop
+<?php $__env->stopSection(); ?>
+<?php echo $__env->make('adminlte::auth.auth-page', ['authType' => 'login'], \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\Users\tampu\Github\evalueaction\resources\views/auth/login.blade.php ENDPATH**/ ?>

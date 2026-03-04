@@ -22,7 +22,7 @@ body {
 
 /* Blue 600 */
 .brand-value {
-    color: #334155;
+    color: #FFD700 !important;
     font-weight: 700;
     letter-spacing: -0.5px;
 }
@@ -208,8 +208,8 @@ body {
 }
 
 .brand-value {
-    color: #475569 !important;
-    /* Cool Grey */
+    color: #FFD700 !important;
+    /* Emas Terang */
     font-weight: 700;
     font-style: italic;
 }
@@ -316,7 +316,7 @@ body {
     .table-stack thead {
         display: none;
     }
-    
+
     .table-stack tr {
         display: block;
         margin-bottom: 1.5rem;
@@ -324,10 +324,10 @@ body {
         padding: 0.5rem;
         background: #fff;
         border-radius: 12px;
-        box-shadow: 0 4px 12px rgba(0,0,0,0.05);
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
         overflow: hidden;
     }
-    
+
     .table-stack td {
         display: flex;
         justify-content: space-between;
@@ -336,7 +336,7 @@ body {
         padding: 0.75rem 1rem !important;
         border-top: 1px solid #f1f5f9 !important;
     }
-    
+
     .table-stack td::before {
         content: attr(data-label);
         font-weight: 700;
@@ -378,17 +378,17 @@ body {
         font-size: 1.5rem !important;
         margin-bottom: 0.5rem;
     }
-    
+
     .content-header .d-flex {
         flex-direction: column;
         align-items: flex-start !important;
     }
-    
+
     .content-header .btn {
         width: 100%;
         margin-top: 0.5rem;
     }
-    
+
     .card-body {
         padding: 0.75rem !important;
     }

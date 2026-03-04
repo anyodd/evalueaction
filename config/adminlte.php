@@ -142,8 +142,6 @@ return [
             'text'        => 'Dashboard Temuan',
             'url'         => 'findings/dashboard',
             'icon'        => 'fas fa-fw fa-chart-pie',
-            'label'       => 'NEW',
-            'label_color' => 'success',
             'can'         => ['superadmin', 'rendal'],
         ],
         ['header' => 'PENGELOLAAN TUGAS'],
@@ -334,7 +332,7 @@ return [
                 [
                     'type' => 'css',
                     'asset' => true,
-                    'location' => 'css/custom.css',
+                    'location' => 'css/custom.css?v=1.1',
                 ],
             ],
         ],

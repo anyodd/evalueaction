@@ -1,21 +1,19 @@
-@extends('adminlte::page')
+<?php $__env->startSection('title', 'Dashboard'); ?>
 
-@section('title', 'Dashboard')
-
-@section('content_header')
+<?php $__env->startSection('content_header'); ?>
     <div class="container-fluid">
         <div class="row mb-2">
             <div class="col-sm-6">
                 <h1 class="m-0 text-dark font-weight-bold">Dashboard Overview</h1>
             </div>
             <div class="col-sm-6 text-right">
-                <span class="text-muted">Selamat datang kembali, <strong>{{ Auth::user()->name }}</strong></span>
+                <span class="text-muted">Selamat datang kembali, <strong><?php echo e(Auth::user()->name); ?></strong></span>
             </div>
         </div>
     </div>
-@stop
+<?php $__env->stopSection(); ?>
 
-@section('content')
+<?php $__env->startSection('content'); ?>
     <div class="container-fluid">
         <!-- Dashboard Greeting -->
         <div class="row">
@@ -28,10 +26,12 @@
                                 <p class="lead mb-4">Sistem Monitoring dan Evaluasi Penugasan Terintegrasi.</p>
                                 <div class="d-flex align-items-center">
                                     <span class="badge badge-light px-3 py-2 mr-2 shadow-sm rounded-pill" style="font-size: 0.95em;">
-                                        <i class="fas fa-calendar-day text-primary mr-2"></i> {{ \Carbon\Carbon::now()->locale('id')->isoFormat('dddd, D MMMM Y') }}
+                                        <i class="fas fa-calendar-day text-primary mr-2"></i> <?php echo e(\Carbon\Carbon::now()->locale('id')->isoFormat('dddd, D MMMM Y')); ?>
+
                                     </span>
                                     <span class="badge px-3 py-2 text-white shadow-sm rounded-pill" style="font-size: 0.95em; background-color: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3);">
-                                        <i class="fas fa-user-shield mr-2"></i> {{ Auth::user()->role->name ?? 'Pengguna' }}
+                                        <i class="fas fa-user-shield mr-2"></i> <?php echo e(Auth::user()->role->name ?? 'Pengguna'); ?>
+
                                     </span>
                                 </div>
                             </div>
@@ -58,26 +58,27 @@
                 <div class="card shadow-sm border-0 animate__animated animate__fadeInUp" style="animation-delay: 0.5s">
                     <div class="card-header border-0 bg-white">
                         <h3 class="card-title font-weight-bold"><i class="fas fa-tasks mr-2 text-primary"></i> Monitoring Progress Penugasan 
-                            @if(in_array(Auth::user()->role->name ?? '', ['Superadmin', 'Rendal']))
+                            <?php if(in_array(Auth::user()->role->name ?? '', ['Superadmin', 'Rendal'])): ?>
                                 (Nasional)
-                            @else
-                                ({{ Auth::user()->perwakilan->nama_perwakilan ?? '' }})
-                            @endif
+                            <?php else: ?>
+                                (<?php echo e(Auth::user()->perwakilan->nama_perwakilan ?? ''); ?>)
+                            <?php endif; ?>
                         </h3>
                     </div>
                     <div class="card-body p-0">
                         <div class="accordion" id="accordionMonitoring">
-                            @forelse($penugasanPerProvinsi as $prov)
+                            <?php $__empty_1 = true; $__currentLoopData = $penugasanPerProvinsi; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $prov): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
                                 <div class="card mb-0 shadow-none border-bottom">
-                                    <div class="card-header bg-light" id="heading-{{ $prov->id }}">
+                                    <div class="card-header bg-light" id="heading-<?php echo e($prov->id); ?>">
                                         <h2 class="mb-0">
-                                            <button class="btn btn-link btn-block text-left text-dark font-weight-bold text-decoration-none" type="button" data-toggle="collapse" data-target="#collapse-{{ $prov->id }}">
-                                                <i class="fas fa-map-marker-alt text-danger mr-2"></i> {{ $prov->nama_perwakilan }}
-                                                <span class="badge badge-primary float-right">{{ $prov->suratTugas->count() }} Penugasan</span>
+                                            <button class="btn btn-link btn-block text-left text-dark font-weight-bold text-decoration-none" type="button" data-toggle="collapse" data-target="#collapse-<?php echo e($prov->id); ?>">
+                                                <i class="fas fa-map-marker-alt text-danger mr-2"></i> <?php echo e($prov->nama_perwakilan); ?>
+
+                                                <span class="badge badge-primary float-right"><?php echo e($prov->suratTugas->count()); ?> Penugasan</span>
                                             </button>
                                         </h2>
                                     </div>
-                                    <div id="collapse-{{ $prov->id }}" class="collapse {{ $loop->first ? 'show' : '' }}" data-parent="#accordionMonitoring">
+                                    <div id="collapse-<?php echo e($prov->id); ?>" class="collapse <?php echo e($loop->first ? 'show' : ''); ?>" data-parent="#accordionMonitoring">
                                         <div class="card-body p-0">
                                             <div class="table-responsive">
                                                 <table class="table table-striped table-hover table-stack m-0">
@@ -92,52 +93,52 @@
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        @foreach($prov->suratTugas as $st)
+                                                        <?php $__currentLoopData = $prov->suratTugas; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $st): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                                             <tr>
                                                                 <td data-label="ST & Objek">
-                                                                    <strong>{{ $st->nomor_st }}</strong><br>
-                                                                    <span class="text-muted small">{{ $st->nama_objek }}</span>
+                                                                    <strong><?php echo e($st->nomor_st); ?></strong><br>
+                                                                    <span class="text-muted small"><?php echo e($st->nama_objek); ?></span>
                                                                 </td>
-                                                                <td data-label="Fase Dominan"><span class="badge badge-{{ $st->badge_fase }} px-2 py-1">{{ $st->fase_sekarang }}</span></td>
+                                                                <td data-label="Fase Dominan"><span class="badge badge-<?php echo e($st->badge_fase); ?> px-2 py-1"><?php echo e($st->fase_sekarang); ?></span></td>
                                                                 <td data-label="Progress PKA" class="align-middle">
                                                                     <div class="progress progress-sm mb-1" style="height: 6px;">
-                                                                        <div class="progress-bar bg-{{ $st->progress_pka == 100 ? 'success' : 'info' }}" style="width: {{ $st->progress_pka }}%"></div>
+                                                                        <div class="progress-bar bg-<?php echo e($st->progress_pka == 100 ? 'success' : 'info'); ?>" style="width: <?php echo e($st->progress_pka); ?>%"></div>
                                                                     </div>
-                                                                    <small class="font-weight-bold text-muted">{{ number_format($st->progress_pka, 1) }}%</small>
+                                                                    <small class="font-weight-bold text-muted"><?php echo e(number_format($st->progress_pka, 1)); ?>%</small>
                                                                 </td>
                                                                 <td data-label="Status KK">
-                                                                    @if(str_contains($st->status_kk, 'Final'))
-                                                                        <span class="text-success font-weight-bold"><i class="fas fa-check-circle mr-1"></i> {{ $st->status_kk }}</span>
-                                                                    @else
-                                                                        <span class="text-secondary">{{ $st->status_kk }}</span>
-                                                                    @endif
+                                                                    <?php if(str_contains($st->status_kk, 'Final')): ?>
+                                                                        <span class="text-success font-weight-bold"><i class="fas fa-check-circle mr-1"></i> <?php echo e($st->status_kk); ?></span>
+                                                                    <?php else: ?>
+                                                                        <span class="text-secondary"><?php echo e($st->status_kk); ?></span>
+                                                                    <?php endif; ?>
                                                                 </td>
                                                                 <td data-label="Laporan (QA)">
-                                                                    @if(str_contains($st->status_laporan, 'Tersedia'))
-                                                                        <span class="badge badge-success"><i class="fas fa-file-pdf mr-1"></i> {{ $st->status_laporan }}</span>
-                                                                    @else
-                                                                        <span class="badge badge-light border">{{ $st->status_laporan }}</span>
-                                                                    @endif
+                                                                    <?php if(str_contains($st->status_laporan, 'Tersedia')): ?>
+                                                                        <span class="badge badge-success"><i class="fas fa-file-pdf mr-1"></i> <?php echo e($st->status_laporan); ?></span>
+                                                                    <?php else: ?>
+                                                                        <span class="badge badge-light border"><?php echo e($st->status_laporan); ?></span>
+                                                                    <?php endif; ?>
                                                                 </td>
                                                                 <td data-label="Aksi">
                                                                     <button class="btn btn-xs btn-outline-info btn-gantt rounded-pill px-3" 
-                                                                        data-st-id="{{ $st->id }}" 
-                                                                        data-st-nomor="{{ $st->nomor_st }}"
-                                                                        data-tasks="{{ $st->gantt_tasks }}">
+                                                                        data-st-id="<?php echo e($st->id); ?>" 
+                                                                        data-st-nomor="<?php echo e($st->nomor_st); ?>"
+                                                                        data-tasks="<?php echo e($st->gantt_tasks); ?>">
                                                                         <i class="fas fa-stream mr-1"></i> Timeline
                                                                     </button>
                                                                 </td>
                                                             </tr>
-                                                        @endforeach
+                                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                                     </tbody>
                                                 </table>
                                             </div>
                                         </div>
                                     </div>
                                 </div>
-                            @empty
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                                 <div class="p-5 text-center text-muted">Belum ada penugasan yang terekam pada area Anda.</div>
-                            @endforelse
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>
@@ -165,17 +166,17 @@
             </div>
         </div>
     </div>
-@stop
+<?php $__env->stopSection(); ?>
 
-@section('css')
+<?php $__env->startSection('css'); ?>
     <style>
         .accordion .card-header button:focus { box-shadow: none; }
         .timeline-item { border-radius: 10px !important; }
         .timeline > div > .timeline-item { box-shadow: 0 0 10px rgba(0,0,0,0.05) !important; border: none; }
     </style>
-@stop
+<?php $__env->stopSection(); ?>
 
-@section('js')
+<?php $__env->startSection('js'); ?>
     <script>
         $(document).ready(function() {
             // Inspirational Quotes Array
@@ -274,5 +275,7 @@
             });
         });
     </script>
-@stop
+<?php $__env->stopSection(); ?>
 
+
+<?php echo $__env->make('adminlte::page', \Illuminate\Support\Arr::except(get_defined_vars(), ['__data', '__path']))->render(); ?><?php /**PATH C:\Users\tampu\Github\evalueaction\resources\views/home.blade.php ENDPATH**/ ?>
