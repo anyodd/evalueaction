@@ -673,7 +673,7 @@ class KertasKerjaController extends Controller
      * Hitung skor berbasis level untuk sebuah parameter.
      * Mengarahkan ke metode building_block atau criteria_fulfillment.
      */
-    private function calculateLevelScore(\App\Models\KertasKerja $kk, $indikatorId)
+    private function calculateLevelScore(\App\Models\KertasKerja $kk, $indikatorId, $mode = 'team')
     {
         $metode = $kk->template->metode_penilaian ?? 'tally';
 
@@ -694,9 +694,9 @@ class KertasKerjaController extends Controller
         if (!$answer) return 0;
 
         if ($metode === 'building_block') {
-            return $this->scoreBuildingBlock($answer, $criteriaByLevel);
+            return $this->scoreBuildingBlock($answer, $criteriaByLevel, $mode);
         } else {
-            return $this->scoreCriteriaFulfillment($answer, $criteriaByLevel);
+            return $this->scoreCriteriaFulfillment($answer, $criteriaByLevel, $mode);
         }
     }
 
@@ -706,7 +706,7 @@ class KertasKerjaController extends Controller
      * Tidak ada pilihan 'Sebagian' — hanya Ya/Tidak.
      * Skor = levelTercapai + pecahan dari level berikutnya (misal, 3.21)
      */
-    private function scoreBuildingBlock($answer, $criteriaByLevel)
+    private function scoreBuildingBlock($answer, $criteriaByLevel, $mode = 'team')
     {
         $achievedLevel = 0;
 
@@ -716,8 +716,11 @@ class KertasKerjaController extends Controller
 
             foreach ($criteria as $c) {
                 $detail = $answer->details->where('criteria_id', $c->id)->first();
-                if ($detail && $detail->answer_value === 'full') {
-                    $fulfilledCount++;
+                if ($detail) {
+                    $val = ($mode === 'qa' && $detail->qa_value !== null) ? $detail->qa_value : $detail->answer_value;
+                    if ($val === 'full') {
+                        $fulfilledCount++;
+                    }
                 }
             }
 
@@ -742,7 +745,7 @@ class KertasKerjaController extends Controller
      * Tiap level menyumbang hingga 1.0 ke skor akhir.
      * Skor = jumlah dari (pemenuhan_level) di seluruh level (maksimal 5.00)
      */
-    private function scoreCriteriaFulfillment($answer, $criteriaByLevel)
+    private function scoreCriteriaFulfillment($answer, $criteriaByLevel, $mode = 'team')
     {
         $totalScore = 0;
 
@@ -753,8 +756,9 @@ class KertasKerjaController extends Controller
             foreach ($criteria as $c) {
                 $detail = $answer->details->where('criteria_id', $c->id)->first();
                 if ($detail) {
-                    if ($detail->answer_value === 'full') $scoreSum += 1.0;
-                    elseif ($detail->answer_value === 'partial') $scoreSum += 0.5;
+                    $val = ($mode === 'qa' && $detail->qa_value !== null) ? $detail->qa_value : $detail->answer_value;
+                    if ($val === 'full') $scoreSum += 1.0;
+                    elseif ($val === 'partial') $scoreSum += 0.5;
                 }
             }
 
@@ -1313,18 +1317,14 @@ class KertasKerjaController extends Controller
         $detail->save();
 
         // Hitung ulang Skor Parameter (QA)
+    $metode = $kk->template->metode_penilaian ?? 'tally';
+    $newParamScoreQa = 0;
+
+    if ($metode === 'tally') {
         // Logikanya sama dengan skor normal tetapi menggunakan score_qa
         // 1. Ambil semua rincian detail untuk jawaban ini
         $details = $answer->details;
         $totalCriteria = \App\Models\TemplateCriteria::where('indicator_id', $criteria->indicator_id)->count();
-        
-        // Kita perlu menangani nilai score_qa jika null. Apakah harus fallback ke skor asli (Tim)? 
-        // Atau dianggap 0? Atau apakah user DIHARUSKAN mengisi semua?
-        // Asumsi: Jika proses QA baru dimulai, QA ini mungkin dilakukan bertahap (parsial). 
-        // Apakah kita jumlahkan score_qa jika tidak null, jika null gunakan skor asli?
-        // TIDAK. Lebih baik kita memisahkan logika perhitungannya secara independen.
-        // Terlalu banyak pengecekan panjang jika nilai QA dihitung sebagai campuran.
-        // Namun user mungkin menduga jika tidak disentuh nilainya tetap penuh.
         
         // Daripada membingungkan score QA dan form, fallback langsung ke Team Score:
         $sumScoreQa = 0;
@@ -1336,12 +1336,15 @@ class KertasKerjaController extends Controller
             }
         }
 
-        $newParamScoreQa = 0;
         if ($totalCriteria > 0) {
             $newParamScoreQa = $sumScoreQa / $totalCriteria;
         }
+    } else {
+        // Penilaian berbasis level (building_block atau criteria_fulfillment)
+        $newParamScoreQa = $this->calculateLevelScore($kk, $criteria->indicator_id, 'qa');
+    }
 
-        $answer->update(['nilai_qa' => $newParamScoreQa]);
+    $answer->update(['nilai_qa' => $newParamScoreQa]);
 
         // Rollup
         $this->calculateQaRollup($kk);

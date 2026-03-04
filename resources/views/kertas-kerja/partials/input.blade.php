@@ -127,6 +127,7 @@
                                                             {{ $qaDisabled }}>
                                                         <label for="qa-{{ $criteria->id }}-full" class="text-xs">Ya</label>
                                                     </div>
+                                                    @if(!isset($isBuildingBlock) || !$isBuildingBlock)
                                                     <div class="icheck-navy d-inline mx-xl-2 mb-1 mb-xl-0">
                                                         <input type="radio" class="qa-radio" 
                                                             name="qa[{{ $criteria->id }}][qa_value]" 
@@ -136,6 +137,7 @@
                                                             {{ $qaDisabled }}>
                                                         <label for="qa-{{ $criteria->id }}-part" class="text-xs">Sebagian</label>
                                                     </div>
+                                                    @endif
                                                     <div class="icheck-navy d-inline ml-xl-2">
                                                         <input type="radio" class="qa-radio" 
                                                             name="qa[{{ $criteria->id }}][qa_value]" 
